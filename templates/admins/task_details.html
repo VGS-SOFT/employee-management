@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+
+{% block title %}Task Details{% endblock %}
+
+{% block style %}
+<style>
+    .page-container {
+        padding: 1.5rem;
+        transition: all 0.3s;
+    }
+
+    .page-header {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.7rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2rem;
+    }
+
+    .card-header {
+        background: transparent;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+    }
+
+    .info-section {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-section h6 {
+        color: #344767;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .info-table {
+        margin-bottom: 0;
+    }
+
+    .info-table th {
+        width: 30%;
+        font-weight: 600;
+        color: #6c757d;
+        padding: 0.75rem;
+        border-top: none;
+    }
+
+    .info-table td {
+        padding: 0.75rem;
+        border-top: none;
+    }
+
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .description-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+    }
+
+    .updates-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .updates-table td {
+        vertical-align: middle;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+
+    /* DataTable Customization */
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border-radius: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">Task Details</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'all_tasks' %}">Tasks</a></li>
+                    <li class="breadcrumb-item active">Task Details</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ task.name }}</h5>
+            <div>
+                <a href="{% url 'edit_task' task.id %}" class="btn btn-primary btn-action me-2">
+                    <i class="bi bi-pencil me-2"></i>Edit Task
+                </a>
+                <a href="{% url 'all_tasks' %}" class="btn btn-secondary btn-action">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Tasks
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Basic Information -->
+            <div class="info-section">
+                <h6><i class="bi bi-info-circle me-2"></i>Basic Information</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="info-table">
+                            <tr>
+                                <th>Project</th>
+                                <td>{{ task.project.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Module</th>
+                                <td>{{ task.module.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>
+                                    <span class="status-badge badge {% if task.status.name == 'Completed' %}bg-success
+                                        {% elif task.status.name == 'In Progress' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ task.status.name }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="info-table">
+                            <tr>
+                                <th>Assigned To</th>
+                                <td>
+                                    {% for member in task.assigned_to.all %}
+                                        <span class="badge bg-light text-dark me-1">
+                                            {{ member.user.email }}
+                                        </span>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Created By</th>
+                                <td>{{ task.created_by }}</td>
+                            </tr>
+                            <tr>
+                                <th>Created On</th>
+                                <td>{{ task.created_on|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Description -->
+            <div class="info-section">
+                <h6><i class="bi bi-card-text me-2"></i>Task Description</h6>
+                <div class="description-card">
+                    {{ task.description|linebreaks|default:"<p class='text-muted'>No description provided.</p>" }}
+                </div>
+            </div>
+
+            <!-- Task Updates -->
+            <div class="info-section">
+                <h6><i class="bi bi-clock-history me-2"></i>Task Updates</h6>
+                {% if task_responses %}
+                    <div class="table-responsive">
+                        <table class="table updates-table" id="updatesTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Team Member</th>
+                                    <th>Status</th>
+                                    <th>Update Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for response in task_responses %}
+                                    <tr>
+                                        <td>{{ response.created_at|date:"Y-m-d H:i" }}</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                {{ response.team_member.user.email }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge badge {% if response.status.name == 'Completed' %}bg-success
+                                                {% elif response.status.name == 'In Progress' %}bg-warning
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ response.status.name }}
+                                            </span>
+                                        </td>
+                                        <td>{{ response.description|linebreaks }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-clock"></i>
+                        <p class="mb-0">No updates have been provided yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#updatesTable').DataTable({
+            order: [[0, 'desc']],
+            pageLength: 10,
+            searching: true,
+            info: true,
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search updates..."
+            }
+        });
+    });
+</script>
+{% endblock %}

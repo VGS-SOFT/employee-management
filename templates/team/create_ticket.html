@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Support Ticket{% endblock %}
+
+{% block style %}
+<style>
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        border: none;
+    }
+    
+    .card-header {
+        background-color: white;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        font-weight: 600;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .btn-primary {
+        background-color: #333333;
+        border-color: #333333;
+    }
+    
+    .btn-primary:hover {
+        background-color: #000000;
+        border-color: #000000;
+    }
+    
+    .btn-outline-secondary {
+        color: #666666;
+        border-color: #dddddd;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        border-color: #dddddd;
+        color: #333333;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #444;
+    }
+    
+    .required-field::after {
+        content: "*";
+        color: #333;
+        margin-left: 4px;
+    }
+    
+    .category-card {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .category-card:hover {
+        border-color: #333;
+        background-color: #f8f9fa;
+    }
+    
+    .category-card.selected {
+        border-color: #333;
+        background-color: #f8f9fa;
+    }
+    
+    .category-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #444;
+    }
+    
+    .priority-option {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .priority-option:hover {
+        border-color: #333;
+        background-color: #f8f9fa;
+    }
+    
+    .priority-option.selected {
+        border-color: #333;
+        background-color: #f8f9fa;
+    }
+    
+    .priority-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    
+    .dropzone {
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        padding: 2rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .dropzone:hover {
+        border-color: #aaa;
+    }
+    
+    .dropzone-icon {
+        font-size: 2rem;
+        color: #aaa;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Create Support Ticket</h1>
+        <a href="{% url 'team_tickets' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Tickets
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="post" enctype="multipart/form-data" id="ticketForm">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="form-label required-field">Subject</label>
+                    <input type="text" name="subject" class="form-control" required 
+                           placeholder="Brief summary of your issue or request" maxlength="100">
+                    <div class="form-text">Clear, concise title for your ticket</div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label required-field">Category</label>
+                    <div class="row row-cols-1 row-cols-md-4 g-3 mb-2">
+                        {% for category in categories %}
+                            <div class="col">
+                                <div class="category-card" onclick="selectCategory(this, '{{ category.id }}')">
+                                    {% if category.icon %}
+                                        <i class="{{ category.icon }} category-icon"></i>
+                                    {% else %}
+                                        <i class="fas fa-ticket-alt category-icon"></i>
+                                    {% endif %}
+                                    <div>{{ category.name }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="category" id="categoryInput" required>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label required-field">Priority</label>
+                    <div class="priority-options mb-2">
+                        {% for priority in priorities %}
+                            <div class="priority-option" onclick="selectPriority(this, '{{ priority.id }}')">
+                                <span class="priority-color" style="background-color: {{ priority.color_code }}"></span>
+                                <div>
+                                    <div class="fw-medium">{{ priority.name }}</div>
+                                    {% if priority.response_time %}
+                                        <small class="text-muted">{{ priority.response_time }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="priority" id="priorityInput" required>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label required-field">Description</label>
+                    <textarea name="description" class="form-control" rows="6" required
+                              placeholder="Please provide details about your issue or request"></textarea>
+                    <div class="form-text">Include as much relevant information as possible</div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label">Attachments (Optional)</label>
+                    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click();">
+                        <div class="dropzone-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <p class="mb-0">Drag files here or click to browse</p>
+                        <small class="text-muted d-block mt-2">Maximum 5 files, 5MB each</small>
+                        <div id="fileList" class="mt-3"></div>
+                    </div>
+                    <input type="file" id="fileInput" name="attachments" multiple style="display: none;" 
+                           onchange="handleFiles(this.files)">
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="window.location='{% url 'team_tickets' %}'">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Submit Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    function selectCategory(element, categoryId) {
+        // Remove selected class from all categories
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked category
+        element.classList.add('selected');
+        
+        // Set the hidden input value
+        document.getElementById('categoryInput').value = categoryId;
+    }
+    
+    function selectPriority(element, priorityId) {
+        // Remove selected class from all priorities
+        document.querySelectorAll('.priority-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked priority
+        element.classList.add('selected');
+        
+        // Set the hidden input value
+        document.getElementById('priorityInput').value = priorityId;
+    }
+    
+    function handleFiles(files) {
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        
+        if (files.length > 5) {
+            alert('You can only upload a maximum of 5 files');
+            document.getElementById('fileInput').value = '';
+            return;
+        }
+        
+        Array.from(files).forEach(file => {
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`File ${file.name} exceeds the 5MB limit`);
+                return;
+            }
+            
+            const fileItem = document.createElement('div');
+            fileItem.className = 'alert alert-light d-flex align-items-center mt-2';
+            fileItem.innerHTML = `
+                <i class="fas fa-file me-2"></i>
+                <div class="me-auto">${file.name} (${formatFileSize(file.size)})</div>
+            `;
+            
+            fileList.appendChild(fileItem);
+        });
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' bytes';
+        else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        else return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+    
+    // Form validation
+    document.getElementById('ticketForm').addEventListener('submit', function(e) {
+        if (!document.getElementById('categoryInput').value) {
+            e.preventDefault();
+            alert('Please select a category');
+        }
+        
+        if (!document.getElementById('priorityInput').value) {
+            e.preventDefault();
+            alert('Please select a priority');
+        }
+    });
+    
+    // Dropzone functionality
+    const dropzone = document.getElementById('dropzone');
+    
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = '#333';
+        dropzone.style.backgroundColor = '#f8f9fa';
+    });
+    
+    dropzone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = '#ddd';
+        dropzone.style.backgroundColor = '';
+    });
+    
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = '#ddd';
+        dropzone.style.backgroundColor = '';
+        
+        if (e.dataTransfer.files.length) {
+            document.getElementById('fileInput').files = e.dataTransfer.files;
+            handleFiles(e.dataTransfer.files);
+        }
+    });
+</script>
+{% endblock %}

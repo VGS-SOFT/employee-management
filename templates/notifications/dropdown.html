@@ -1,0 +1,44 @@
+<div class="dropdown">
+  <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+    <i class="bi bi-bell"></i>
+    {% if unread_count > 0 %}
+      <span class="badge bg-primary badge-number">{{ unread_count }}</span>
+    {% endif %}
+  </a>
+
+  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
+    <li class="dropdown-header">
+      You have {{ unread_count }} new notifications
+      {% if unread_count > 0 %}
+        <a href="{% url 'notifications' %}"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+      {% endif %}
+    </li>
+
+    {% for notification in notifications|slice:":5" %}
+      <li>
+        <hr class="dropdown-divider">
+      </li>
+      <li class="notification-item {% if not notification.is_read %}unread{% endif %}">
+        <i class="bi bi-{% if notification.type == 'TASK_UPDATE' %}check-circle{% elif notification.type == 'MESSAGE' %}envelope{% else %}info-circle{% endif %} text-primary"></i>
+        <div>
+          <h4>{{ notification.title }}</h4>
+          <p>{{ notification.message }}</p>
+          <p>{{ notification.created_at|timesince }} ago</p>
+        </div>
+      </li>
+    {% empty %}
+      <li class="notification-item">
+        <div>
+          <p class="text-muted">No notifications</p>
+        </div>
+      </li>
+    {% endfor %}
+
+    <li>
+      <hr class="dropdown-divider">
+    </li>
+    <li class="dropdown-footer">
+      <a href="{% url 'notifications' %}">Show all notifications</a>
+    </li>
+  </ul>
+</div>

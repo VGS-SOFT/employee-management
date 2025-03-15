@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  Tasks
+{% endblock %}
+
+{% block content %}
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <!-- Display messages (alerts) -->
+            {% if messages %}
+              <div class="mt-2">
+                {% for message in messages %}
+                  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <!-- Header with title and actions -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title">Tasks</h5>
+              
+             <a href="{% url 'team_view_add_task' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Task</a>
+            </div>
+
+            <!-- Tasks Table -->
+            {% if data %}
+              <div class="table-responsive">
+                <table id="tasksTable" class="table table-striped table-bordered">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>#</th>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Project</th>
+                      <th>Module</th>
+                      <th>Status</th>
+                      <th>Manager</th>
+                      <th>team_task_id</th>
+                      {% comment %} <th>Actions</th> {% endcomment %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for task in data %}
+                      <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ task.name }}</td>
+                        <td>
+                          <div class="description-preview" onclick="toggleDescription(this)">
+                            <span class="short-description">{{ task.description|default:'No description'|truncatechars:20 }}</span>
+                            <span class="full-description d-none">{{ task.description|default:'No description' }}</span>
+                          </div>
+                        </td>
+                        <td>{{ task.project|default:'N/A' }}</td>
+                        <td>{{ task.module|default:'N/A' }}</td>
+                        <td>
+                          <span class="badge {% if task.status == 'completed' %}
+                              bg-success
+                            {% elif task.status == 'started' %}
+                              bg-warning
+                            {% else %}
+                              bg-secondary
+                            {% endif %}">
+                            {{ task.status|default:'N/A' }}
+                          </span>
+                        </td>
+                        <td>{{ task.manager|default:'N/A' }}</td>
+                        <td>{{ task.team_task_id}}</td>
+                        {% comment %} <td>
+                          <a href="{% url 'add_task_response' task.id %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil"></i> Update
+                          </a>
+                        </td> {% endcomment %}
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-center">No tasks available.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block script %}
+  <!-- DataTables CSS and JS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+  <script>
+    $(document).ready(function () {
+      // Initialize DataTable
+      $('#tasksTable').DataTable({
+        paging: true,
+        searching: true,
+        ordering: true,
+        info: true
+      })
+    
+      // Delete confirmation
+      $('.delete-btn').click(function (event) {
+        event.preventDefault()
+        const isConfirmed = confirm('Are you sure you want to delete this task?')
+        if (isConfirmed) {
+          const taskId = $(this).data('id')
+          window.location.href = `/delete-task/${taskId}/` // Update the delete URL as needed
+        }
+      })
+    })
+    
+    // Toggle full description
+    function toggleDescription(element) {
+      const shortDesc = element.querySelector('.short-description')
+      const fullDesc = element.querySelector('.full-description')
+    
+      if (fullDesc.classList.contains('d-none')) {
+        shortDesc.classList.add('d-none')
+        fullDesc.classList.remove('d-none')
+      } else {
+        shortDesc.classList.remove('d-none')
+        fullDesc.classList.add('d-none')
+      }
+    }
+  </script>
+{% endblock %}

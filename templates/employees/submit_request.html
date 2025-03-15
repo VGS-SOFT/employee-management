@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Request{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h5 class="card-title mb-0">Submit Request</h5>
+        </div>
+        <div class="card-body">
+          {% if pending_checkout %}
+          <div class="alert alert-warning mt-2">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>You have an incomplete check-out!</strong> Your last check-in was on {{ pending_checkout.check_in|date:"F d, Y" }} at {{ pending_checkout.check_in|time:"g:i A" }}, but you never checked out.
+          </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'team_submit_request' %}">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+              <label for="date" class="form-label">Date for Request *</label>
+              <input type="date" class="form-control" id="date" name="date" 
+                     {% if pending_checkout %}value="{{ pending_checkout.check_in|date:'Y-m-d' }}"{% endif %} 
+                     max="{{ today|date:'Y-m-d' }}" required>
+            </div>
+            
+            <div class="mb-3">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="check_in" name="check_in">
+                    <label class="form-check-label" for="check_in">Check In</label>
+                  </div>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                    <input type="time" class="form-control" id="check_in_time" name="check_in_time">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="check_out" name="check_out">
+                    <label class="form-check-label" for="check_out">Check Out</label>
+                  </div>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                    <input type="time" class="form-control" id="check_out_time" name="check_out_time">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="explanation" class="form-label">Explanation *</label>
+              <textarea class="form-control" id="explanation" name="explanation" rows="4" required
+                        placeholder="Please explain your request in detail"></textarea>
+              <div class="form-text">Include all relevant information such as reasons, and any other details.</div>
+            </div>
+            
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">Submit Request</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

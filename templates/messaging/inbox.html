@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Messages Inbox{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title m-0">Messages Inbox</h5>
+            <div>
+              <a href="{% url 'sent_messages' %}" class="btn btn-outline-primary btn-sm me-2">
+                <i class="bi bi-envelope-paper"></i> Sent Messages
+              </a>  
+              <a href="{% url 'compose_message' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-envelope-plus"></i> New Message
+              </a>
+            </div>
+          </div>
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="messagesTable" width="100%">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>From</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for thread in threads %}
+                  <tr {% if thread.has_unread %}class="table-active"{% endif %}>
+                    <td>{{ thread.subject }}</td>
+                    <td>{{ thread.messages.first.sender.name }}</td>
+                    <td data-order="{{ thread.updated_at|date:'Y-m-d H:i:s' }}">
+                      {{ thread.updated_at|date:"M d, Y H:i" }}
+                    </td>
+                    <td class="text-center">
+                      {% if thread.has_unread %}
+                        <span class="badge bg-primary">New</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-center">
+                      <a href="{% url 'view_thread' thread.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-envelope-open"></i> Read
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#messagesTable').DataTable({
+        responsive: true,
+        order: [[2, 'desc']],
+        pageLength: 10,
+        language: {
+            emptyTable: "No messages in inbox",
+            zeroRecords: "No matching messages found",
+            info: "Showing _START_ to _END_ of _TOTAL_ messages",
+            infoEmpty: "Showing 0 to 0 of 0 messages",
+            infoFiltered: "(filtered from _MAX_ total messages)"
+        },
+        columnDefs: [
+            { orderable: false, targets: [3, 4] },
+            { className: "text-center", targets: [3, 4] }
+        ],
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        drawCallback: function(settings) {
+            // Re-initialize tooltips after DataTable updates
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block style %}
+<style>
+/* Custom DataTable Styling */
+.dataTables_wrapper .dataTables_length select {
+    min-width: 60px;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    min-width: 250px;
+}
+
+.table > :not(caption) > * > * {
+    padding: 1rem 0.75rem;
+}
+
+.badge {
+    font-weight: 500;
+}
+
+/* Responsive table improvements */
+@media screen and (max-width: 767px) {
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        text-align: left;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dataTables_wrapper .dataTables_filter input {
+        min-width: 100%;
+    }
+}
+</style>
+{% endblock %}

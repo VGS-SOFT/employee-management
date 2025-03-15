@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ticket #{{ ticket.ticket_id }}{% endblock %}
+
+{% block style %}
+<style>
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        border: none;
+    }
+    
+    .card-header {
+        background-color: white;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        font-weight: 600;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .btn-primary {
+        background-color: #333333;
+        border-color: #333333;
+    }
+    
+    .btn-primary:hover {
+        background-color: #000000;
+        border-color: #000000;
+    }
+    
+    .btn-outline-secondary {
+        color: #666666;
+        border-color: #dddddd;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        border-color: #dddddd;
+        color: #333333;
+    }
+    
+    .ticket-header {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .status-badge {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 50px;
+    }
+    
+    /* Status badge colors */
+    .badge-NEW { background-color: #333; color: white; }
+    .badge-ASSIGNED { background-color: #666; color: white; }
+    .badge-IN_PROGRESS { background-color: #444; color: white; }
+    .badge-ON_HOLD { background-color: #999; color: white; }
+    .badge-RESOLVED { background-color: #ccc; color: #333; }
+    .badge-CLOSED { background-color: #eee; color: #333; }
+    .badge-REOPENED { background-color: #555; color: white; }
+    
+    .ticket-info {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .ticket-info-item {
+        flex: 1 1 33%;
+        min-width: 200px;
+        margin-bottom: 1rem;
+    }
+    
+    .info-label {
+        font-size: 0.85rem;
+        color: #666666;
+        font-weight: 500;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        color: #333333;
+    }
+    
+    .comment {
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        margin-bottom: 1rem;
+    }
+    
+    .comment.private {
+        background-color: #f0f0f0;
+        border-left: 3px solid #333;
+    }
+    
+    .comment-user {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .comment-time {
+        font-size: 0.8rem;
+        color: #777;
+    }
+    
+    .attachment-card {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .attachment-card:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .attachment-icon {
+        font-size: 1.5rem;
+        color: #666;
+        margin-right: 1rem;
+    }
+    
+    .file-info {
+        flex-grow: 1;
+    }
+    
+    .file-meta {
+        font-size: 0.8rem;
+        color: #777;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Ticket #{{ ticket.ticket_id }}</h1>
+        <a href="{% url 'team_tickets' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Tickets
+        </a>
+    </div>
+    
+    <!-- Ticket Header -->
+    <div class="ticket-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-start">
+            <div>
+                <h2 class="h4 mb-1">{{ ticket.subject }}</h2>
+                <div class="d-flex flex-wrap align-items-center mt-2">
+                    <span class="badge bg-light text-dark me-2">{{ ticket.category.name }}</span>
+                    <span class="badge bg-light text-dark me-2">{{ ticket.priority.name }}</span>
+                    <span class="status-badge badge badge-{{ ticket.status }} me-2">{{ ticket.get_status_display }}</span>
+                    <span class="text-muted">{{ ticket.created_at|date:"F d, Y g:i A" }}</span>
+                </div>
+            </div>
+            
+            {% if is_management %}
+            <div class="mt-2 mt-md-0">
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <select name="status" class="form-select">
+                            {% for status_code, status_name in status_choices %}
+                                <option value="{{ status_code }}" {% if ticket.status == status_code %}selected{% endif %}>
+                                    {{ status_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary">Update Status</button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="ticket-info">
+            <div class="ticket-info-item">
+                <div class="info-label">Created By</div>
+                <div class="info-value">{{ ticket.created_by.user.name }}</div>
+            </div>
+            
+            <div class="ticket-info-item">
+                <div class="info-label">Assigned To</div>
+                <div class="info-value">
+                    {% if ticket.assigned_to %}
+                        {{ ticket.assigned_to.user.name }}
+                    {% else %}
+                        <span class="text-muted">Not assigned</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="ticket-info-item">
+                <div class="info-label">Last Updated</div>
+                <div class="info-value">{{ ticket.updated_at|date:"F d, Y g:i A" }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Main Ticket Content -->
+        <div class="col-lg-8">
+            <!-- Ticket Description -->
+            <div class="card mb-4">
+                <div class="card-header">Description</div>
+                <div class="card-body">
+                    <p class="ticket-description">{{ ticket.description|linebreaks }}</p>
+                </div>
+            </div>
+            
+            <!-- Comments Section -->
+            <div class="card">
+                <div class="card-header">Activity & Comments</div>
+                <div class="card-body">
+                    {% if comments %}
+                        <div class="comments-list">
+                            {% for comment in comments %}
+                                <div class="comment {% if comment.is_private %}private{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="comment-user">{{ comment.user.name }}</div>
+                                        <div class="comment-time">{{ comment.created_at|date:"M d, Y g:i A" }}</div>
+                                    </div>
+                                    {% if comment.is_private %}
+                                        <div class="badge bg-secondary mb-2">Private Note</div>
+                                    {% endif %}
+                                    <div class="comment-text">{{ comment.comment|linebreaks }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No comments yet</p>
+                    {% endif %}
+                    
+                    <!-- Add Comment Form -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Add Comment</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                        </div>
+                        
+                        {% if is_management %}
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_private" name="is_private">
+                            <label class="form-check-label" for="is_private">Private note (only visible to management)</label>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-comment me-2"></i>Add Comment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Attachments -->
+            <div class="card">
+                <div class="card-header">Attachments</div>
+                <div class="card-body">
+                    {% if attachments %}
+                        <div class="attachments-list">
+                            {% for attachment in attachments %}
+                                <a href="{{ attachment.file.url }}" class="attachment-card text-decoration-none" target="_blank">
+                                    <div class="attachment-icon">
+                                        {% if attachment.content_type == 'application/pdf' %}
+                                            <i class="far fa-file-pdf"></i>
+                                        {% elif 'image' in attachment.content_type %}
+                                            <i class="far fa-file-image"></i>
+                                        {% elif 'word' in attachment.content_type %}
+                                            <i class="far fa-file-word"></i>
+                                        {% elif 'excel' in attachment.content_type or 'spreadsheet' in attachment.content_type %}
+                                            <i class="far fa-file-excel"></i>
+                                        {% else %}
+                                            <i class="far fa-file"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="file-info">
+                                        <div class="file-name text-dark">{{ attachment.filename }}</div>
+                                        <div class="file-meta">
+                                            {{ attachment.file_size|filesizeformat }} • 
+                                            <span>{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-download text-muted"></i>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No attachments</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if is_management %}
+            <!-- Assignment Management (Management Only) -->
+            <div class="card mt-4">
+                <div class="card-header">Assign Ticket</div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'assign_ticket' ticket.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="assigned_to" class="form-label">Assign To</label>
+                            <select class="form-select" id="assigned_to" name="assigned_to">
+                                <option value="">Unassigned</option>
+                                {% for manager in managers %}
+                                    <option value="{{ manager.id }}" {% if ticket.assigned_to == manager %}selected{% endif %}>
+                                        {{ manager.user.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Update Assignment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Resolution Information (If Resolved) -->
+            {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}
+            <div class="card mt-4">
+                <div class="card-header">Resolution</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="info-label">Resolved On</div>
+                        <div class="info-value">{{ ticket.resolved_at|date:"F d, Y" }}</div>
+                    </div>
+                    
+                    {% if ticket.resolution_notes %}
+                        <div class="mb-0">
+                            <div class="info-label">Resolution Notes</div>
+                            <div class="mt-2">{{ ticket.resolution_notes|linebreaks }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

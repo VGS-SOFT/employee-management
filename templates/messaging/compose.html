@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Compose Message{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title m-0">Compose New Message</h5>
+            <a href="{% url 'messages_inbox' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-left"></i> Back to Inbox
+            </a>
+          </div>
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="POST">
+            {% csrf_token %}
+            
+            <!-- Message Type -->
+            <div class="mb-3">
+              <label class="form-label">Message Type</label>
+              <select name="message_type" id="messageType" class="form-select" required>
+                <option value="INDIVIDUAL">Individual Message</option>
+                {% if user.role == 'MANAGEMENT' %}
+                  <option value="ALL">Broadcast to All Team Members</option>
+                {% endif %}
+              </select>
+            </div>
+
+            <!-- Recipients Selection -->
+            <div class="mb-3" id="recipientsSection">
+              <label class="form-label">Select Recipients</label>
+              <select name="individual_recipients" class="form-select" multiple>
+                {% for user in users %}
+                  <option value="{{ user.id }}">{{ user.name }} - {{ user.email }}</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted">Hold Ctrl/Cmd to select multiple recipients</small>
+            </div>
+
+            <!-- Subject -->
+            <div class="mb-3">
+              <label class="form-label">Subject</label>
+              <input type="text" name="subject" class="form-control" required>
+            </div>
+
+            <!-- Message Content -->
+            <div class="mb-3">
+              <label class="form-label">Message</label>
+              <textarea name="content" class="form-control" rows="5" required></textarea>
+            </div>
+
+            <div class="text-end">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Send Message
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready(function() {
+    $('#messageType').change(function() {
+        const type = $(this).val();
+        const recipientsSection = $('#recipientsSection');
+        
+        if (type === 'ALL') {
+            recipientsSection.hide();
+        } else {
+            recipientsSection.show();
+        }
+    });
+});
+</script>
+{% endblock %}

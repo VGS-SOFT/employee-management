@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Request{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+  <h1>Submit Request</h1>
+  <nav>
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'team_dashboard' %}">Home</a></li>
+      <li class="breadcrumb-item active">Submit Request</li>
+    </ol>
+  </nav>
+</div>
+
+<section class="section">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">New Request</h5>
+          
+          {% if pending_checkout %}
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>You have an incomplete check-out!</strong> Your last check-in was on {{ pending_checkout.check_in|date:"F d, Y" }} at {{ pending_checkout.check_in|time:"g:i A" }}, but you never checked out.
+          </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'team_submit_request' %}">
+            {% csrf_token %}
+            
+            <div class="row mb-3">
+              <label for="date" class="col-sm-2 col-form-label">Date for Request *</label>
+              <div class="col-sm-10">
+                <input type="date" class="form-control" id="date" name="date" 
+                       {% if pending_checkout %}value="{{ pending_checkout.check_in|date:'Y-m-d' }}"{% endif %} 
+                       max="{{ today|date:'Y-m-d' }}" required>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <label for="time" class="col-sm-2 col-form-label">Time *</label>
+              <div class="col-sm-10">
+                <input type="time" class="form-control" id="time" name="time" 
+                       {% if pending_checkout %}value="{{ pending_checkout.check_in|time:'H:i' }}"{% else %}value="{{ now }}"{% endif %}>
+                <div class="form-text">Specify a time if your request is time-specific</div>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <label for="explanation" class="col-sm-2 col-form-label">Explanation *</label>
+              <div class="col-sm-10">
+                <textarea class="form-control" id="explanation" name="explanation" rows="4" required
+                          placeholder="Please explain your request in detail"></textarea>
+                <div class="form-text">Include all relevant information such as times, reasons, and any other details.</div>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-sm-10 offset-sm-2">
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %} 

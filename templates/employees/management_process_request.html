@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Process Request{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+  <h1>Process Request</h1>
+  <nav>
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'management_dashboard' %}">Home</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'management_all_requests' %}">Team Requests</a></li>
+      <li class="breadcrumb-item active">Process Request</li>
+    </ol>
+  </nav>
+</div>
+
+<section class="section">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Request Details</h5>
+          
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label text-muted">Employee</label>
+                <p class="fw-bold">{{ team_request.user.name }}</p>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label text-muted">Department</label>
+                <p>
+                  {% if team_request.user.role == 'TEAM' %}
+                    {{ team_request.user.team.department }}
+                  {% else %}
+                    {{ team_request.user.management.department }}
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label text-muted">Date & Time Requested</label>
+                <p>
+                  {{ team_request.date|date:"F d, Y" }}
+                  {% if team_request.time %}
+                  <span class="badge bg-info ms-2">
+                    <i class="bi bi-clock me-1"></i>{{ team_request.time|time:"g:i A" }}
+                  </span>
+                  {% endif %}
+                </p>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label text-muted">Submitted On</label>
+                <p>{{ team_request.created_at|date:"F d, Y g:i A" }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="form-label text-muted">Request Explanation</label>
+            <div class="border p-3 bg-light rounded">
+              <p class="mb-0">{{ team_request.explanation }}</p>
+            </div>
+          </div>
+          
+          <form method="post" action="{% url 'management_process_request' team_request.id %}">
+            {% csrf_token %}
+            
+            <div class="row mb-3">
+              <label for="status" class="col-sm-2 col-form-label">Decision *</label>
+              <div class="col-sm-10">
+                <select class="form-select" id="status" name="status" required>
+                  <option value="" disabled selected>Select your decision</option>
+                  <option value="APPROVED">Approve</option>
+                  <option value="REJECTED">Reject</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <label for="review_notes" class="col-sm-2 col-form-label">Review Notes</label>
+              <div class="col-sm-10">
+                <textarea class="form-control" id="review_notes" name="review_notes" rows="3"
+                          placeholder="Provide any additional notes or comments about your decision"></textarea>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-sm-10 offset-sm-2">
+                <a href="{% url 'management_all_requests' %}" class="btn btn-secondary me-2">
+                  <i class="bi bi-arrow-left me-1"></i> Back to List
+                </a>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-check-circle me-1"></i> Submit Decision
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %} 

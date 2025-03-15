@@ -1,0 +1,67 @@
+{% load static %}
+
+<header id="header" class="header fixed-top d-flex align-items-center">
+  <div class="d-flex align-items-center justify-content-between">
+    <a href="#" class="logo d-flex align-items-center">
+      <img src="{% static 'assets/img/logo.png' %}" alt="" />
+      <span class="d-none d-lg-block">VGS IT SOLUTION</span>
+    </a>
+    {% comment %} <i class="bi bi-list toggle-sidebar-btn"></i> {% endcomment %}
+  </div>
+
+  <!-- Center welcome message -->
+  <div class="mx-auto">
+    <span class="fs-5">Welcome, {{ user.name|default:user }}</span>
+  </div>
+
+  <!-- Simple logout button with right margin -->
+  <nav class="header-nav ms-auto">
+    <ul class="d-flex align-items-center">
+      {% if user.role == 'TEAM' %}
+      <li class="nav-item me-3">
+        <a class="nav-link" href="{% url 'team_profile' %}">
+          <i class="bi bi-person-circle"></i>
+        </a>
+      </li>
+      {% endif %}
+      
+      <li class="nav-item me-4">
+        <a class="nav-link" href="{% url 'logout' %}">
+          <i class="bi bi-box-arrow-right"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+      {% comment %} <li class="nav-item dropdown">
+        
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
+          <li class="dropdown-header">
+            You have {{ unread_notifications_count }} new notifications 
+            <a href="{% url 'notifications' %}"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+          </li>
+          
+          {% for notification in recent_notifications %}
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li class="notification-item">
+              <i class="bi bi-{% if notification.type == 'TASK_UPDATE' %}check-circle{% elif notification.type == 'MESSAGE' %}envelope{% else %}info-circle{% endif %} text-primary"></i>
+              <div>
+                <h4>{{ notification.title }}</h4>
+                <p>{{ notification.message }}</p>
+                <p>{{ notification.created_at|timesince }} ago</p>
+              </div>
+            </li>
+          {% endfor %}
+          
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li class="dropdown-footer">
+            <a href="{% url 'notifications' %}">Show all notifications</a>
+          </li>
+        </ul>
+      </li> {% endcomment %}
+    </ul>
+  </nav>
+</header>
+

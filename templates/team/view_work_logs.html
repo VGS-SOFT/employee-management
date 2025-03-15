@@ -1,0 +1,108 @@
+{% extends 'base.html' %} {% block title %}
+  My Work Logs
+{% endblock %} {% block content %}
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">My Work Logs</h5>
+              <a href="{% url 'add_work_log' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Work Log</a>
+            </div>
+
+            <div class="table-responsive">
+              <table id="workLogsTable" class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Task</th>
+                    <th>Project - Module</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if work_logs %}
+                    {% for log in work_logs %}
+                      <tr>
+                        <td>{{ log.created_at|date:'Y-m-d' }}</td>
+                        <td>{{ log.task.name }}</td>
+                        <td>{{ log.task.project.name }} - {{ log.task.module.name }}</td>
+                        <td>{{ log.start_time|date:'H:i' }}</td>
+                        <td>{{ log.end_time|date:'H:i' }}</td>
+                        <td>
+                          {% with duration=log.end_time|timeuntil:log.start_time %}
+                            {{ duration }}
+                          {% endwith %}
+                        </td>
+                        <td>
+                          <span class="badge {% if log.status.name == 'Completed' %}
+                              bg-success
+                            {% elif log.status.name == 'In Progress' %}
+                              bg-warning
+                            {% else %}
+                              bg-secondary
+                            {% endif %}">
+                            {{ log.status.name }}
+                          </span>
+                        </td>
+                        <td>
+                          <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#descModal{{ log.id }}"><i class="bi bi-eye"></i> View</button>
+
+                          <!-- Description Modal -->
+                          <div class="modal fade" id="descModal{{ log.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                              <div class="modal-content">
+                                <div class="modal-header">
+                                  <h5 class="modal-title">Work Description</h5>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                  <div style="white-space: pre-wrap">{{ log.description }}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="8" class="text-center">No work logs found</td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %} {% block script %}
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+  <script>
+    $(document).ready(function () {
+      $('#workLogsTable').DataTable({
+        order: [[0, 'desc']], // Sort by date by default
+        pageLength: 10,
+        columnDefs: [
+          {
+            targets: 7, // Description column
+            orderable: false,
+            searchable: false
+          }
+        ]
+      })
+    })
+  </script>
+{% endblock %}

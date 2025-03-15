@@ -1,0 +1,448 @@
+<aside id="sidebar" class="sidebar" style="background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%); box-shadow: 5px 0 25px rgba(0, 0, 0, 0.05); height: 100vh; padding: 24px 16px; transition: all 0.3s ease-in-out; width: 280px; z-index: 996; border-right: 1px solid rgba(0,0,0,0.05);">
+  
+  <!-- Brand/Logo Area -->
+  <div style="padding: 0 12px 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.05);">
+    <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #2c2c2c; letter-spacing: -0.5px;">
+      Dashboard<span style="color: #4154f1;">.</span>
+    </h2>
+  </div>
+
+  {% if user.role == 'TEAM' %}
+  <ul class="sidebar-nav" id="sidebar-nav" style="list-style: none; padding: 0; margin: 0;">
+    <!-- Dashboard Link -->
+    <li class="nav-item" style="margin-bottom: 8px;">
+      <a href="{% url 'team_dashboard' %}"
+         class="nav-link {% if request.resolver_match.url_name == 'team_dashboard' %}active{% else %}collapsed{% endif %}"
+         style="display: flex; align-items: center; padding: 12px 16px; border-radius: 12px; text-decoration: none; transition: all 0.3s ease; background: {% if request.resolver_match.url_name == 'team_dashboard' %}#4154f1{% else %}transparent{% endif %}; color: {% if request.resolver_match.url_name == 'team_dashboard' %}#ffffff{% else %}#2c2c2c{% endif %}; font-weight: 500; letter-spacing: 0.3px;">
+        <i class="bi bi-grid" style="font-size: 18px; margin-right: 12px; {% if request.resolver_match.url_name == 'team_dashboard' %}color: #ffffff{% endif %}"></i>
+        <span style="font-size: 14px;">Dashboard</span>
+      </a>
+    </li>
+
+    <!-- Tasks Section -->
+    <li class="nav-item" style="margin-bottom: 8px;">
+      <a class="nav-link {% if request.resolver_match.url_name == 'team_view_all_task' %}active{% else %}collapsed{% endif %}"
+         style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 12px; text-decoration: none; transition: all 0.3s ease; background: {% if request.resolver_match.url_name == 'team_view_all_task' %}#4154f1{% else %}transparent{% endif %}; color: {% if request.resolver_match.url_name == 'team_view_all_task' %}#ffffff{% else %}#2c2c2c{% endif %}; font-weight: 500; letter-spacing: 0.3px;"
+         data-bs-target="#tasks-nav"
+         data-bs-toggle="collapse"
+         href="#">
+        <div style="display: flex; align-items: center;">
+          <i class="bi bi-list-task" style="font-size: 18px; margin-right: 12px;"></i>
+          <span style="font-size: 14px;">Tasks</span>
+        </div>
+        <i class="bi bi-chevron-down" style="font-size: 14px; transition: transform 0.3s ease;"></i>
+      </a>
+      <ul id="tasks-nav"
+          class="nav-content collapse {% if request.resolver_match.url_name == 'team_view_all_task' %}show{% endif %}"
+          style="list-style: none; padding: 5px 0 5px 48px; margin-top: 5px;"
+          data-bs-parent="#sidebar-nav">
+        <li style="margin: 8px 0;">
+          <a href="{% url 'team_view_all_task' %}"
+             style="display: flex; align-items: center; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; color: {% if request.resolver_match.url_name == 'team_view_all_task' %}#4154f1{% else %}#6c757d{% endif %}; font-size: 13px; font-weight: 500;">
+            <i class="bi bi-circle-fill" style="font-size: 6px; margin-right: 12px;"></i>
+            <span>View All</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Tickets Section -->
+    <li class="nav-item" style="margin-bottom: 8px;">
+      <a class="nav-link {% if request.resolver_match.url_name == 'team_tickets' or request.resolver_match.url_name == 'create_ticket' or request.resolver_match.url_name == 'ticket_detail' %}active{% else %}collapsed{% endif %}"
+         style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 12px; text-decoration: none; transition: all 0.3s ease; background: {% if request.resolver_match.url_name == 'team_tickets' or request.resolver_match.url_name == 'create_ticket' or request.resolver_match.url_name == 'ticket_detail' %}#4154f1{% else %}transparent{% endif %}; color: {% if request.resolver_match.url_name == 'team_tickets' or request.resolver_match.url_name == 'create_ticket' or request.resolver_match.url_name == 'ticket_detail' %}#ffffff{% else %}#2c2c2c{% endif %}; font-weight: 500; letter-spacing: 0.3px;"
+         data-bs-target="#team-tickets-nav"
+         data-bs-toggle="collapse"
+         href="#">
+        <div style="display: flex; align-items: center;">
+          <i class="bi bi-ticket-perforated" style="font-size: 18px; margin-right: 12px;"></i>
+          <span style="font-size: 14px;">Support Tickets</span>
+        </div>
+        <i class="bi bi-chevron-down" style="font-size: 14px; transition: transform 0.3s ease;"></i>
+      </a>
+      <ul id="team-tickets-nav"
+          class="nav-content collapse {% if request.resolver_match.url_name == 'team_tickets' or request.resolver_match.url_name == 'create_ticket' or request.resolver_match.url_name == 'ticket_detail' %}show{% endif %}"
+          style="list-style: none; padding: 5px 0 5px 48px; margin-top: 5px; background: rgba(65, 84, 241, 0.05); border-radius: 8px;"
+          data-bs-parent="#sidebar-nav">
+        <li style="margin: 8px 0;">
+          <a href="{% url 'team_tickets' %}"
+             style="display: flex; align-items: center; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; color: {% if request.resolver_match.url_name == 'team_tickets' %}#4154f1{% else %}#6c757d{% endif %}; font-size: 13px; font-weight: 500;">
+            <i class="bi bi-circle-fill" style="font-size: 6px; margin-right: 12px;"></i>
+            <span>My Tickets</span>
+          </a>
+        </li>
+        <li style="margin: 8px 0;">
+          <a href="{% url 'create_ticket' %}"
+             style="display: flex; align-items: center; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; color: {% if request.resolver_match.url_name == 'create_ticket' %}#4154f1{% else %}#6c757d{% endif %}; font-size: 13px; font-weight: 500;">
+            <i class="bi bi-circle-fill" style="font-size: 6px; margin-right: 12px;"></i>
+            <span>Create Ticket</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Work Logs Section with similar styling -->
+    <li class="nav-heading" style="padding: 0 16px; margin: 24px 0 8px; font-size: 11px; text-transform: uppercase; color: #6c757d; font-weight: 600; letter-spacing: 1px;">
+      Work Management
+    </li>
+
+    <li class="nav-item" style="margin-bottom: 8px;">
+      <a class="nav-link {% if request.resolver_match.url_name == 'add_work_log' or request.resolver_match.url_name == 'view_work_logs' %}active{% else %}collapsed{% endif %}"
+         style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 12px; text-decoration: none; transition: all 0.3s ease; background: {% if request.resolver_match.url_name == 'add_work_log' or request.resolver_match.url_name == 'view_work_logs' %}#4154f1{% else %}transparent{% endif %}; color: {% if request.resolver_match.url_name == 'add_work_log' or request.resolver_match.url_name == 'view_work_logs' %}#ffffff{% else %}#2c2c2c{% endif %}; font-weight: 500; letter-spacing: 0.3px;"
+         data-bs-target="#worklog-nav"
+         data-bs-toggle="collapse"
+         href="#">
+        <div style="display: flex; align-items: center;">
+          <i class="bi bi-clock-history" style="font-size: 18px; margin-right: 12px;"></i>
+          <span style="font-size: 14px;">Work Logs</span>
+        </div>
+        <i class="bi bi-chevron-down" style="font-size: 14px; transition: transform 0.3s ease;"></i>
+      </a>
+      <ul id="worklog-nav"
+          class="nav-content collapse {% if request.resolver_match.url_name == 'add_work_log' or request.resolver_match.url_name == 'view_work_logs' %}show{% endif %}"
+          style="list-style: none; padding: 5px 0 5px 48px; margin-top: 5px; background: rgba(65, 84, 241, 0.05); border-radius: 8px;"
+          data-bs-parent="#sidebar-nav">
+        <li style="margin: 8px 0;">
+          <a href="{% url 'add_work_log' %}"
+             style="display: flex; align-items: center; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; color: {% if request.resolver_match.url_name == 'add_work_log' %}#4154f1{% else %}#6c757d{% endif %}; font-size: 13px; font-weight: 500;">
+            <i class="bi bi-circle-fill" style="font-size: 6px; margin-right: 12px;"></i>
+            <span>Add New</span>
+          </a>
+        </li>
+        <li style="margin: 8px 0;">
+          <a href="{% url 'view_work_logs' %}"
+             style="display: flex; align-items: center; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; color: {% if request.resolver_match.url_name == 'view_work_logs' %}#4154f1{% else %}#6c757d{% endif %}; font-size: 13px; font-weight: 500;">
+            <i class="bi bi-circle-fill" style="font-size: 6px; margin-right: 12px;"></i>
+            <span>View All</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Add Requests section -->
+    <li class="nav-item" style="margin-bottom: 8px;">
+      <a class="nav-link {% if request.resolver_match.url_name == 'team_submit_request' or request.resolver_match.url_name == 'team_view_requests' %}active{% else %}collapsed{% endif %}"
+         style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 12px; text-decoration: none; transition: all 0.3s ease; background: {% if request.resolver_match.url_name == 'team_submit_request' or request.resolver_match.url_name == 'team_view_requests' %}#4154f1{% else %}transparent{% endif %}; color: {% if request.resolver_match.url_name == 'team_submit_request' or request.resolver_match.url_name == 'team_view_requests' %}#ffffff{% else %}#2c2c2c{% endif %}; font-weight: 500; letter-spacing: 0.3px;"
+         data-bs-target="#requests-nav"
+         data-bs-toggle="collapse"
+         href="#">
+        <div style="display: flex; align-items: center;">
+          <i class="bi bi-clipboard-plus" style="font-size: 18px; margin-right: 12px;"></i>
+          <span style="font-size: 14px;">Requests</span>
+        </div>
+        <i class="bi bi-chevron-down" style="font-size: 14px; transition: transform 0.3s ease;"></i>
+      </a>
+      <ul id="requests-nav"
+          class="nav-content collapse {% if request.resolver_match.url_name == 'team_submit_request' or request.resolver_match.url_name == 'team_view_requests' %}show{% endif %}"
+          style="list-style: none; padding: 5px 0 5px 48px; margin-top: 5px; background: rgba(65, 84, 241, 0.05); border-radius: 8px;"
+          data-bs-parent="#sidebar-nav">
+        <li style="margin: 8px 0;">
+          <a href="{% url 'team_submit_request' %}"
+             style="display: flex; align-items: center; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; color: {% if request.resolver_match.url_name == 'team_submit_request' %}#4154f1{% else %}#6c757d{% endif %}; font-size: 13px; font-weight: 500;">
+            <i class="bi bi-circle-fill" style="font-size: 6px; margin-right: 12px;"></i>
+            <span>Submit Request</span>
+          </a>
+        </li>
+        <li style="margin: 8px 0;">
+          <a href="{% url 'team_view_requests' %}"
+             style="display: flex; align-items: center; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; color: {% if request.resolver_match.url_name == 'team_view_requests' %}#4154f1{% else %}#6c757d{% endif %}; font-size: 13px; font-weight: 500;">
+            <i class="bi bi-circle-fill" style="font-size: 6px; margin-right: 12px;"></i>
+            <span>View Requests</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+  {% else %}
+
+  <ul class="sidebar-nav" id="sidebar-nav">
+    <li class="nav-item">
+      <a
+        href="{% url 'management_dashboard' %}"
+        class="nav-link {% if request.resolver_match.url_name == 'management_dashboard' %}active{% else %}collapsed{% endif %}"
+      >
+        <i class="bi bi-grid"></i>
+        <span>Dashboard</span>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.resolver_match.url_name == 'all_employees' or request.resolver_match.url_name == 'present_employees' %}active{% else %}collapsed{% endif %}"
+        data-bs-target="#employees-nav"
+        data-bs-toggle="collapse"
+        href="#"
+      >
+        <i class="bi bi-people"></i>
+        <span>Employees</span>
+        <i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul
+        id="employees-nav"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'all_employees' or request.resolver_match.url_name == 'present_employees' %}show{% endif %}"
+        data-bs-parent="#sidebar-nav"
+      >
+        <li>
+          <a
+            href="{% url 'all_employees' %}"
+            class="{% if request.resolver_match.url_name == 'all_employees' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>All Employees</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'present_employees' %}"
+            class="{% if request.resolver_match.url_name == 'present_employees' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>Present Employees</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.resolver_match.url_name == 'all_projects' or request.resolver_match.url_name == 'add_projects' %}active{% else %}collapsed{% endif %}"
+        data-bs-target="#projects-nav"
+        data-bs-toggle="collapse"
+        href="#"
+      >
+        <i class="bi bi-folder"></i>
+        <span>Projects</span>
+        <i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul
+        id="projects-nav"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'all_projects' or request.resolver_match.url_name == 'add_projects' %}show{% endif %}"
+        data-bs-parent="#sidebar-nav"
+      >
+        <li>
+          <a
+            href="{% url 'all_projects' %}"
+            class="{% if request.resolver_match.url_name == 'all_projects' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>All Projects</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'add_projects' %}"
+            class="{% if request.resolver_match.url_name == 'add_projects' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>Add Project</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.resolver_match.url_name == 'all_modules' or request.resolver_match.url_name == 'add_modules' %}active{% else %}collapsed{% endif %}"
+        data-bs-target="#modules-nav"
+        data-bs-toggle="collapse"
+        href="#"
+      >
+        <i class="bi bi-layers"></i>
+        <span>Modules</span>
+        <i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul
+        id="modules-nav"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'all_modules' or request.resolver_match.url_name == 'add_modules' %}show{% endif %}"
+        data-bs-parent="#sidebar-nav"
+      >
+        <li>
+          <a
+            href="{% url 'all_modules' %}"
+            class="{% if request.resolver_match.url_name == 'all_modules' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>All Modules</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'add_modules' %}"
+            class="{% if request.resolver_match.url_name == 'add_modules' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>Add Module</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.resolver_match.url_name == 'management_view_all_tasks' %}active{% else %}collapsed{% endif %}"
+        data-bs-target="#tasks-nav"
+        data-bs-toggle="collapse"
+        href="#"
+      >
+        <i class="bi bi-list-task"></i>
+        <span>Tasks</span>
+        <i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul
+        id="tasks-nav"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'all_tasks' or request.resolver_match.url_name == 'add_tasks' or request.resolver_match.url_name == 'management_view_all_tasks' %}show{% endif %}"
+        data-bs-parent="#sidebar-nav"
+      >
+        <li>
+          <a
+            href="{% url 'management_view_all_tasks' %}"
+            class="{% if request.resolver_match.url_name == 'management_view_all_tasks' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>Tasks</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- Support Tickets Section for Management -->
+    <li class="nav-item">
+      <a
+        class="nav-link {% if request.resolver_match.url_name == 'management_tickets' or request.resolver_match.url_name == 'management_ticket_detail' or request.resolver_match.url_name == 'assign_ticket' %}active{% else %}collapsed{% endif %}"
+        data-bs-target="#management-tickets-nav"
+        data-bs-toggle="collapse"
+        href="#"
+      >
+        <i class="bi bi-ticket-perforated"></i>
+        <span>Support Tickets</span>
+        <i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul
+        id="management-tickets-nav"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'management_tickets' or request.resolver_match.url_name == 'management_ticket_detail' or request.resolver_match.url_name == 'assign_ticket' %}show{% endif %}"
+        data-bs-parent="#sidebar-nav"
+      >
+        <li>
+          <a
+            href="{% url 'management_tickets' %}"
+            class="{% if request.resolver_match.url_name == 'management_tickets' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>All Tickets</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <li class="nav-item">
+      <a
+        href="{% url 'management_view_all_worklogs' %}"
+        class="nav-link {% if request.resolver_match.url_name == 'management_view_all_worklogs' %}active{% else %}collapsed{% endif %}"
+      >
+        <i class="bi bi-clock-history"></i>
+        <span>Team Work Logs</span>
+      </a>
+    </li>
+
+    <!-- Add Team Requests link for management -->
+    <li class="nav-item">
+      <a
+        href="{% url 'management_all_requests' %}"
+        class="nav-link {% if request.resolver_match.url_name == 'management_all_requests' or request.resolver_match.url_name == 'management_process_request' %}active{% else %}collapsed{% endif %}"
+      >
+        <i class="bi bi-clipboard-check"></i>
+        <span>Team Requests</span>
+      </a>
+    </li>
+
+    {% comment %} <li class="nav-item">
+      <a
+        class="nav-link {% if request.resolver_match.url_name == '' %}active{% else %}collapsed{% endif %}"
+        href=""
+      >
+        <i class="bi bi-toggle-on"></i>
+        <span>Status</span>
+      </a>
+    </li> {% endcomment %}
+
+    {% comment %} <li class="nav-item">
+      <a class="nav-link {% if request.resolver_match.url_name == 'messages_inbox' or request.resolver_match.url_name == 'compose_message' or request.resolver_match.url_name == 'view_thread' %}active{% else %}collapsed{% endif %}"
+        data-bs-target="#messages-nav"
+        data-bs-toggle="collapse"
+        href="#"
+      >
+        <i class="bi bi-envelope"></i>
+        <span>Messages</span>
+        <i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul id="messages-nav"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'messages_inbox' or request.resolver_match.url_name == 'compose_message' or request.resolver_match.url_name == 'view_thread' %}show{% endif %}"
+        data-bs-parent="#sidebar-nav"
+      >
+        <li>
+          <a href="{% url 'messages_inbox' %}"
+            class="{% if request.resolver_match.url_name == 'messages_inbox' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>Inbox</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'compose_message' %}"
+            class="{% if request.resolver_match.url_name == 'compose_message' %}active{% endif %}"
+          >
+            <i class="bi bi-circle"></i><span>New Message</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <li class="nav-item">
+      <a href="{% url 'notifications' %}"
+        class="nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% else %}collapsed{% endif %}"
+      >
+        <i class="bi bi-bell"></i>
+        <span>Notifications</span>
+      </a>
+    </li> {% endcomment %}
+  </ul>
+
+  {% endif %}
+</aside>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Hover effects for nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        if (!link.classList.contains('active')) {
+            link.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(65, 84, 241, 0.05)';
+                this.style.color = '#4154f1';
+            });
+
+            link.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'transparent';
+                    this.style.color = '#2c2c2c';
+                }
+            });
+        }
+    });
+
+    // Dropdown arrow rotation
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const icon = this.querySelector('.bi-chevron-down');
+            if (icon) {
+                icon.style.transform = this.classList.contains('collapsed') ? 'rotate(0deg)' : 'rotate(-180deg)';
+            }
+        });
+    });
+
+    // Submenu hover effects
+    document.querySelectorAll('.nav-content a').forEach(link => {
+        link.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('active')) {
+                this.style.background = 'rgba(65, 84, 241, 0.05)';
+            }
+        });
+
+        link.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('active')) {
+                this.style.background = 'transparent';
+            }
+        });
+    });
+});
+</script>
+  

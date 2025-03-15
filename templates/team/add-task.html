@@ -1,0 +1,131 @@
+{% extends 'base.html' %} 
+{% block content %}
+  <section class="section">
+    <div class="row justify-content-center">
+      <div class="col-md-8" style="height: 80vh">
+        <div class="card">
+          <div class="card-body">
+            {% if messages %}
+              <div class="mt-2">
+                {% for message in messages %}
+                  <div class="alert {% if message.tags %}
+                      alert-{{ message.tags }}
+                    {% else %}
+                      alert-info
+                    {% endif %} alert-dismissible fade show"
+                    role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <h5 class="card-title">Add New Task</h5>
+
+            <form method="POST" action="{% url 'team_view_add_task' %}">
+              {% csrf_token %}
+
+              <!-- Task Title -->
+              <div class="row mb-3">
+                <label for="title" class="col-sm-3 col-form-label">Task Title</label>
+                <div class="col-sm-9">
+                  <input type="text" name="name" id="title" placeholder="Enter Task Title" class="form-control" required />
+                </div>
+              </div>
+
+              <!-- Task Description -->
+              <div class="row mb-3">
+                <label for="description" class="col-sm-3 col-form-label">Description</label>
+                <div class="col-sm-9">
+                  <textarea name="description" id="description" placeholder="Enter Task Description" class="form-control" rows="4"></textarea>
+                </div>
+              </div>
+
+              <!-- Project Selection -->
+              <div class="row mb-3">
+                <label for="project" class="col-sm-3 col-form-label">Project</label>
+                <div class="col-sm-9">
+                  <select name="project" id="project" class="form-control" required>
+                    <option value="">Select Project</option>
+                    {% for project in projects %}
+                      <option value="{{ project.id }}">{{ project.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <!-- Module Selection -->
+              <div class="row mb-3">
+                <label for="module" class="col-sm-3 col-form-label">Module</label>
+                <div class="col-sm-9">
+                  <select name="module" id="module" class="form-control" required>
+                    <option value="">Select Module</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Manager Selection -->
+              <div class="row mb-3">
+                <label for="manager" class="col-sm-3 col-form-label">Manager</label>
+                <div class="col-sm-9">
+                  <select name="manager" id="manager" class="form-control" required>
+                    <option value="">Select Manager</option>
+                    {% for manager in managers %}
+                      <option value="{{ manager.id }}">{{ manager.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <!-- Status Selection -->
+              <div class="row mb-3">
+                <label for="status" class="col-sm-3 col-form-label">Status</label>
+                <div class="col-sm-9">
+                  <select name="status" id="status" class="form-control" required>
+                    <option value="">Select Status</option>
+                    {% for status in statuses %}
+                      <option value="{{ status.id }}">{{ status.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="row mb-3">
+                <div class="col-sm-9 offset-sm-3">
+                  <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% block extra_js %}
+  <script>
+    document.getElementById('project').addEventListener('change', function() {
+      const projectId = this.value;
+      const moduleSelect = document.getElementById('module');
+      
+      // Clear current modules
+      moduleSelect.innerHTML = '<option value="">Select Module</option>';
+      
+      if (projectId) {
+        // Fetch modules for selected project
+        fetch(`/get-modules-for-project/?project_id=${projectId}`)
+          .then(response => response.json())
+          .then(data => {
+            data.modules.forEach(module => {
+              const option = new Option(module.name, module.id);
+              moduleSelect.add(option);
+            });
+          });
+      }
+    });
+  </script>
+  {% endblock %}
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}My Requests{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+  <h1>My Requests</h1>
+  <nav>
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'team_dashboard' %}">Home</a></li>
+      <li class="breadcrumb-item active">My Requests</li>
+    </ol>
+  </nav>
+</div>
+
+<section class="section">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Request History</h5>
+          
+          <div class="d-flex justify-content-end mb-3">
+            <a href="{% url 'team_submit_request' %}" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i> Submit New Request
+            </a>
+          </div>
+          
+          {% if user_requests %}
+          <div class="table-responsive">
+            <table class="table table-hover datatable">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Request Type</th>
+                  <th scope="col">Time Details</th>
+                  <th scope="col">Explanation</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Submitted On</th>
+                  <th scope="col">Review Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for req in user_requests %}
+                <tr>
+                  <td>{{ req.date|date:"M d, Y" }}</td>
+                  <td>
+                    {% if req.check_in and req.check_out %}
+                      <span class="badge bg-info">Check-in & Check-out</span>
+                    {% elif req.check_in %}
+                      <span class="badge bg-primary">Check-in</span>
+                    {% elif req.check_out %}
+                      <span class="badge bg-secondary">Check-out</span>
+                    {% else %}
+                      <span class="badge bg-light text-dark">Other</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if req.check_in %}
+                      <div><small class="text-muted">Check-in:</small> {{ req.check_in_time|time:"g:i A" }}</div>
+                    {% endif %}
+                    {% if req.check_out %}
+                      <div><small class="text-muted">Check-out:</small> {{ req.check_out_time|time:"g:i A" }}</div>
+                    {% endif %}
+                  </td>
+                  <td>{{ req.explanation|truncatechars:50 }}</td>
+                  <td>
+                    <span class="badge {% if req.status == 'APPROVED' %}bg-success{% elif req.status == 'REJECTED' %}bg-danger{% else %}bg-warning{% endif %}">
+                      {{ req.status }}
+                    </span>
+                  </td>
+                  <td>{{ req.created_at|date:"M d, Y" }}</td>
+                  <td>{{ req.review_notes|default:"-"|truncatechars:30 }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            You haven't submitted any requests yet.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %} 

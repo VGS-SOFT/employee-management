@@ -1,0 +1,693 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ticket #{{ ticket.ticket_id }} - Management{% endblock %}
+
+{% block style %}
+<style>
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        border: none;
+    }
+    
+    .card-header {
+        background-color: white;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        font-weight: 600;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .btn-primary {
+        background-color: #333333;
+        border-color: #333333;
+    }
+    
+    .btn-primary:hover {
+        background-color: #000000;
+        border-color: #000000;
+    }
+    
+    .btn-outline-secondary {
+        color: #666666;
+        border-color: #dddddd;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        border-color: #dddddd;
+        color: #333333;
+    }
+    
+    .ticket-header {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .status-badge {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 50px;
+    }
+    
+    /* Status badge colors */
+    .badge-NEW { background-color: #333; color: white; }
+    .badge-ASSIGNED { background-color: #666; color: white; }
+    .badge-IN_PROGRESS { background-color: #444; color: white; }
+    .badge-ON_HOLD { background-color: #999; color: white; }
+    .badge-RESOLVED { background-color: #ccc; color: #333; }
+    .badge-CLOSED { background-color: #eee; color: #333; }
+    .badge-REOPENED { background-color: #555; color: white; }
+    
+    .ticket-info {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .ticket-info-item {
+        flex: 1 1 33%;
+        min-width: 200px;
+        margin-bottom: 1rem;
+    }
+    
+    .info-label {
+        font-size: 0.85rem;
+        color: #666666;
+        font-weight: 500;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        color: #333333;
+    }
+    
+    .comment {
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        margin-bottom: 1rem;
+    }
+    
+    .comment.private {
+        background-color: #f0f0f0;
+        border-left: 3px solid #333;
+    }
+    
+    .comment.system {
+        background-color: #f5f5f5;
+        border-left: 3px solid #999;
+        font-style: italic;
+    }
+    
+    .comment-user {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .comment-time {
+        font-size: 0.8rem;
+        color: #777;
+    }
+    
+    .attachment-card {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .attachment-card:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .attachment-icon {
+        font-size: 1.5rem;
+        color: #666;
+        margin-right: 1rem;
+    }
+    
+    .file-info {
+        flex-grow: 1;
+    }
+    
+    .file-meta {
+        font-size: 0.8rem;
+        color: #777;
+    }
+    
+    .priority-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    .timeline-container {
+        position: relative;
+        padding-left: 3rem;
+    }
+    
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        left: 0.7rem;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background-color: #eee;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -2.35rem;
+        top: 0.25rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background-color: #333;
+    }
+    
+    .timeline-marker.system {
+        background-color: #999;
+    }
+    
+    .nav-pills .nav-link {
+        color: #555;
+        border-radius: 50px;
+        padding: 0.5rem 1rem;
+    }
+    
+    .nav-pills .nav-link.active {
+        background-color: #333;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Ticket #{{ ticket.ticket_id }}</h1>
+            <p class="text-muted mb-0">Manage ticket details and track progress</p>
+        </div>
+        <a href="{% url 'management_tickets' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Tickets
+        </a>
+    </div>
+    
+    <!-- Ticket Header -->
+    <div class="ticket-header">
+        <div class="d-flex flex-column flex-md-row justify-content-between">
+            <div class="mb-3 mb-md-0">
+                <h2 class="h4 mb-2">{{ ticket.subject }}</h2>
+                <div class="d-flex flex-wrap align-items-center">
+                    <span class="badge bg-light text-dark me-2 mb-2">
+                        <i class="fas fa-folder me-1"></i>{{ ticket.category.name }}
+                    </span>
+                    <span class="badge bg-light text-dark me-2 mb-2">
+                        <span class="priority-indicator" style="background-color: {{ ticket.priority.color_code }}"></span>
+                        {{ ticket.priority.name }} Priority
+                    </span>
+                    <span class="status-badge badge badge-{{ ticket.status }} me-2 mb-2">{{ ticket.get_status_display }}</span>
+                    <span class="text-muted mb-2">
+                        <i class="far fa-calendar-alt me-1"></i>{{ ticket.created_at|date:"F d, Y g:i A" }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="d-flex">
+                <div class="dropdown me-2">
+                    <button class="btn btn-primary dropdown-toggle" type="button" id="statusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-sync-alt me-1"></i>Update Status
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="statusDropdown">
+                        {% for status_code, status_name in status_choices %}
+                            {% if status_code != ticket.status %}
+                                <li>
+                                    <form method="post" class="dropdown-item-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="update_status">
+                                        <input type="hidden" name="status" value="{{ status_code }}">
+                                        <button type="submit" class="dropdown-item">
+                                            {{ status_name }}
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="assignDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-check me-1"></i>{% if ticket.assigned_to %}Reassign{% else %}Assign{% endif %}
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="assignDropdown">
+                        <li>
+                            <form method="post" class="dropdown-item-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_assignment">
+                                <input type="hidden" name="assigned_to" value="{{ management.id }}">
+                                <button type="submit" class="dropdown-item">
+                                    Assign to Me
+                                </button>
+                            </form>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for manager in managers %}
+                            {% if manager.id != ticket.assigned_to.id %}
+                                <li>
+                                    <form method="post" class="dropdown-item-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="update_assignment">
+                                        <input type="hidden" name="assigned_to" value="{{ manager.id }}">
+                                        <button type="submit" class="dropdown-item">
+                                            {{ manager.user.name }}
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if ticket.assigned_to %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" class="dropdown-item-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="update_assignment">
+                                    <input type="hidden" name="assigned_to" value="">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        Unassign
+                                    </button>
+                                </form>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ticket-info mt-4">
+            <div class="ticket-info-item">
+                <div class="info-label">Created By</div>
+                <div class="info-value">
+                    <i class="fas fa-user me-1"></i>{{ ticket.created_by.user.name }}
+                </div>
+            </div>
+            
+            <div class="ticket-info-item">
+                <div class="info-label">Assigned To</div>
+                <div class="info-value">
+                    {% if ticket.assigned_to %}
+                        <i class="fas fa-user-tie me-1"></i>{{ ticket.assigned_to.user.name }}
+                    {% else %}
+                        <span class="text-muted">Not assigned</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="ticket-info-item">
+                <div class="info-label">Last Updated</div>
+                <div class="info-value">{{ ticket.updated_at|date:"F d, Y g:i A" }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Main Content Column -->
+        <div class="col-lg-8">
+            <!-- Ticket Tabs -->
+            <ul class="nav nav-pills mb-4" id="ticketTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="conversation-tab" data-bs-toggle="tab" data-bs-target="#conversation" type="button" role="tab" aria-controls="conversation" aria-selected="true">
+                        <i class="fas fa-comments me-1"></i>Conversation
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">
+                        <i class="fas fa-info-circle me-1"></i>Details
+                    </button>
+                </li>
+                {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="resolution-tab" data-bs-toggle="tab" data-bs-target="#resolution" type="button" role="tab" aria-controls="resolution" aria-selected="false">
+                        <i class="fas fa-check-circle me-1"></i>Resolution
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Tab Content -->
+            <div class="tab-content" id="ticketTabsContent">
+                <!-- Conversation Tab -->
+                <div class="tab-pane fade show active" id="conversation" role="tabpanel" aria-labelledby="conversation-tab">
+                    <!-- Description -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Description</span>
+                                <span class="text-muted small">{{ ticket.created_at|date:"M d, Y g:i A" }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="ticket-description mb-0">{{ ticket.description|linebreaks }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Comments -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Comments & Activity</span>
+                                <span class="badge bg-light text-dark">{{ comments.count }} items</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if comments %}
+                                <div class="timeline-container">
+                                    {% for comment in comments %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker {% if 'changed from' in comment.comment %}system{% endif %}"></div>
+                                            <div class="comment {% if comment.is_private %}private{% elif 'changed from' in comment.comment %}system{% endif %}">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="comment-user">{{ comment.user.name }}</div>
+                                                    <div class="comment-time">{{ comment.created_at|date:"M d, Y g:i A" }}</div>
+                                                </div>
+                                                {% if comment.is_private %}
+                                                    <div class="badge bg-secondary mb-2">Private Note</div>
+                                                {% endif %}
+                                                <div class="comment-text">{{ comment.comment|linebreaks }}</div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center mb-0">No activity yet</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Add Comment Form -->
+                    <div class="card">
+                        <div class="card-header">Add Comment</div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="add_comment">
+                                <div class="mb-3">
+                                    <textarea class="form-control" id="comment" name="comment" rows="3" required placeholder="Add a comment or note..."></textarea>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="is_private" name="is_private">
+                                    <label class="form-check-label" for="is_private">Private note (only visible to management)</label>
+                                </div>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-1"></i>Add Comment
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Details Tab -->
+                <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+                    <div class="card">
+                        <div class="card-header">Ticket Details</div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="info-label">Ticket ID</div>
+                                    <div class="info-value">{{ ticket.ticket_id }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Status</div>
+                                    <div class="info-value">
+                                        <span class="status-badge badge badge-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Created On</div>
+                                    <div class="info-value">{{ ticket.created_at|date:"F d, Y g:i A" }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="info-label">Priority</div>
+                                    <div class="info-value">
+                                        <span class="priority-indicator" style="background-color: {{ ticket.priority.color_code }}"></span>
+                                        {{ ticket.priority.name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Category</div>
+                                    <div class="info-value">{{ ticket.category.name }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Last Updated</div>
+                                    <div class="info-value">{{ ticket.updated_at|date:"F d, Y g:i A" }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="info-label">Created By</div>
+                                    <div class="info-value">{{ ticket.created_by.user.name }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Assigned To</div>
+                                    <div class="info-value">
+                                        {% if ticket.assigned_to %}
+                                            {{ ticket.assigned_to.user.name }}
+                                        {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-label">Department</div>
+                                    <div class="info-value">{{ ticket.created_by.department|default:"Not specified" }}</div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h5 class="mb-3">Full Description</h5>
+                            <div class="p-3 bg-light rounded">
+                                {{ ticket.description|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resolution Tab -->
+                {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}
+                <div class="tab-pane fade" id="resolution" role="tabpanel" aria-labelledby="resolution-tab">
+                    <div class="card">
+                        <div class="card-header">Resolution Information</div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="info-label">Resolution Date</div>
+                                    <div class="info-value">{{ ticket.resolved_at|date:"F d, Y g:i A" }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-label">Resolved By</div>
+                                    <div class="info-value">
+                                        {% if ticket.assigned_to %}
+                                            {{ ticket.assigned_to.user.name }}
+                                        {% else %}
+                                            <span class="text-muted">Not specified</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h5 class="mb-3">Resolution Notes</h5>
+                            <div class="p-3 bg-light rounded">
+                                {% if ticket.resolution_notes %}
+                                    {{ ticket.resolution_notes|linebreaks }}
+                                {% else %}
+                                    <p class="text-muted mb-0">No resolution notes provided.</p>
+                                {% endif %}
+                            </div>
+                            
+                            {% if ticket.status == 'RESOLVED' %}
+                            <div class="mt-4">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="update_status">
+                                    <input type="hidden" name="status" value="CLOSED">
+                                    <div class="mb-3">
+                                        <label for="resolutionNotes" class="form-label">Update Resolution Notes (Optional)</label>
+                                        <textarea class="form-control" id="resolutionNotes" name="resolution_notes" rows="3">{{ ticket.resolution_notes }}</textarea>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-check-double me-1"></i>Close Ticket
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            {% endif %}
+                            
+                            {% if ticket.status == 'CLOSED' %}
+                            <div class="mt-4">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="update_status">
+                                    <input type="hidden" name="status" value="REOPENED">
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-outline-primary">
+                                            <i class="fas fa-redo me-1"></i>Reopen Ticket
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sidebar Column -->
+        <div class="col-lg-4">
+            <!-- Status Update Form for RESOLVED/CLOSED -->
+            {% if ticket.status != 'RESOLVED' and ticket.status != 'CLOSED' %}
+            <div class="card mb-4">
+                <div class="card-header">Resolve Ticket</div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_status">
+                        <input type="hidden" name="status" value="RESOLVED">
+                        <div class="mb-3">
+                            <label for="resolutionNotes" class="form-label">Resolution Notes</label>
+                            <textarea class="form-control" id="resolutionNotes" name="resolution_notes" rows="3" placeholder="Describe how this ticket was resolved..."></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check-circle me-1"></i>Mark as Resolved
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Assignment Card -->
+            <div class="card mb-4">
+                <div class="card-header">Ticket Assignment</div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_assignment">
+                        <div class="mb-3">
+                            <label for="assigned_to" class="form-label">Assign To</label>
+                            <select class="form-select" id="assigned_to" name="assigned_to">
+                                <option value="">Unassigned</option>
+                                {% for manager in managers %}
+                                    <option value="{{ manager.id }}" {% if ticket.assigned_to == manager %}selected{% endif %}>
+                                        {{ manager.user.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-user-check me-1"></i>Update Assignment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Attachments -->
+            <div class="card">
+                <div class="card-header">Attachments</div>
+                <div class="card-body">
+                    {% if attachments %}
+                        <div class="attachments-list">
+                            {% for attachment in attachments %}
+                                <a href="{{ attachment.file.url }}" class="attachment-card text-decoration-none" target="_blank">
+                                    <div class="attachment-icon">
+                                        {% if attachment.content_type == 'application/pdf' %}
+                                            <i class="far fa-file-pdf"></i>
+                                        {% elif 'image' in attachment.content_type %}
+                                            <i class="far fa-file-image"></i>
+                                        {% elif 'word' in attachment.content_type %}
+                                            <i class="far fa-file-word"></i>
+                                        {% elif 'excel' in attachment.content_type or 'spreadsheet' in attachment.content_type %}
+                                            <i class="far fa-file-excel"></i>
+                                        {% else %}
+                                            <i class="far fa-file"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="file-info">
+                                        <div class="file-name text-dark">{{ attachment.filename }}</div>
+                                        <div class="file-meta">
+                                            {{ attachment.file_size|filesizeformat }} • 
+                                            <span>{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-download text-muted"></i>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No attachments</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Enable tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Handle hash links for tabs
+        var hash = window.location.hash;
+        if (hash) {
+            var triggerEl = document.querySelector('button[data-bs-target="' + hash + '"]');
+            if (triggerEl) {
+                var tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
+        }
+        
+        // Style for dropdown forms
+        document.querySelectorAll('.dropdown-item-form').forEach(form => {
+            form.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+    });
+</script>
+{% endblock %} 

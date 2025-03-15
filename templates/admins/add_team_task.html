@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Task{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title">Add New Task</h5>
+            {% if is_management %}
+              <a href="{% url 'management_view_all_tasks' %}" class="btn btn-secondary">Back to Tasks</a>
+            {% else %}
+              <a href="{% url 'view_team_tasks' %}" class="btn btn-secondary">Back to Tasks</a>
+            {% endif %}
+          </div>
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <!-- Project Selection -->
+            <div class="row mb-3">
+              <label for="project" class="col-sm-3 col-form-label">Project</label>
+              <div class="col-sm-9">
+                <select name="project" id="project" class="form-select" required>
+                  <option value="">Select Project</option>
+                  {% for project in projects %}
+                    <option value="{{ project.id }}">{{ project.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a project.</div>
+              </div>
+            </div>
+
+            <!-- Module Selection -->
+            <div class="row mb-3">
+              <label for="module" class="col-sm-3 col-form-label">Module</label>
+              <div class="col-sm-9">
+                <select name="module" id="module" class="form-select" required>
+                  <option value="">Select Module</option>
+                  {% for module in modules %}
+                    <option value="{{ module.id }}">{{ module.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a module.</div>
+              </div>
+            </div>
+
+            <!-- Task Name -->
+            <div class="row mb-3">
+              <label for="name" class="col-sm-3 col-form-label">Task Name</label>
+              <div class="col-sm-9">
+                <input type="text" class="form-control" id="name" name="name" required>
+                <div class="invalid-feedback">Please enter a task name.</div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="row mb-3">
+              <label for="description" class="col-sm-3 col-form-label">Description</label>
+              <div class="col-sm-9">
+                <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                <div class="invalid-feedback">Please enter a description.</div>
+              </div>
+            </div>
+
+            <!-- Manager Selection -->
+            <div class="row mb-3">
+              <label for="manager" class="col-sm-3 col-form-label">Manager</label>
+              <div class="col-sm-9">
+                <select name="manager" id="manager" class="form-select" required>
+                  <option value="">Select Manager</option>
+                  {% for manager in managers %}
+                    <option value="{{ manager.id }}">{{ manager.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a manager.</div>
+              </div>
+            </div>
+
+            <!-- Status Selection -->
+            <div class="row mb-3">
+              <label for="status" class="col-sm-3 col-form-label">Status</label>
+              <div class="col-sm-9">
+                <select name="status" id="status" class="form-select" required>
+                  <option value="">Select Status</option>
+                  {% for status in statuses %}
+                    <option value="{{ status.id }}">{{ status.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a status.</div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="row mb-3">
+              <div class="col-sm-9 offset-sm-3">
+                <button type="submit" class="btn btn-primary">Create Task</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block script %}
+<script>
+  // Form validation
+  (function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        form.classList.add('was-validated')
+      }, false)
+    })
+  })()
+</script>
+{% endblock %} 

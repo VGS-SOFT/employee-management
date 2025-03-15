@@ -1,0 +1,110 @@
+{% extends 'base.html' %} 
+{% block content %}
+  <section class="section">
+    <div class="row justify-content-center">
+      <div class="col-md-8" style="height: 80vh">
+        <div class="card">
+          <div class="card-body">
+            {% if messages %}
+              <div class="mt-2">
+                {% for message in messages %}
+                  <div class="alert {% if message.tags %}
+                      alert-{{ message.tags }}
+                    {% else %}
+                      alert-info
+                    {% endif %} alert-dismissible fade show"
+                    role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <h5 class="card-title">Add New Task</h5>
+
+            <form method="POST" action="{% url 'add_tasks' %}">
+              {% csrf_token %}
+
+              <!-- Task Title -->
+              <div class="row mb-3">
+                <label for="title" class="col-sm-3 col-form-label">Task Title</label>
+                <div class="col-sm-9">
+                  <input type="text" name="name" id="title" placeholder="Enter Task Title" class="form-control" required />
+                </div>
+              </div>
+
+              <!-- Task Description -->
+              <div class="row mb-3">
+                <label for="description" class="col-sm-3 col-form-label">Description</label>
+                <div class="col-sm-9">
+                  <textarea name="description" id="description" placeholder="Enter Task Description" class="form-control" rows="4"></textarea>
+                </div>
+              </div>
+
+              <!-- Task Status -->
+              <div class="row mb-3">
+                <label for="status" class="col-sm-3 col-form-label">Status</label>
+                <div class="col-sm-9">
+                  <select name="status" id="status" class="form-control" required>
+                    <option value="">Select Status</option>
+                    {% for status in statuses %}
+                      <option value="{{ status.id }}">{{ status.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <!-- Project Selection -->
+              <div class="row mb-3">
+                <label for="project" class="col-sm-3 col-form-label">Project</label>
+                <div class="col-sm-9">
+                  <select name="project" id="project" class="form-control" required>
+                    <option value="">Select Project</option>
+                    {% for project in projects %}
+                      <option value="{{ project.id }}">{{ project.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <!-- Module Selection -->
+              <div class="row mb-3">
+                <label for="module" class="col-sm-3 col-form-label">Module</label>
+                <div class="col-sm-9">
+                  <select name="module" id="module" class="form-control" required>
+                    <option value="">Select Module</option>
+                    {% for module in modules %}
+                      <option value="{{ module.id }}">{{ module.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <!-- Assign Team Members (Multiple Selection) -->
+              <div class="row mb-3">
+                <label for="assigned_to" class="col-sm-3 col-form-label">Assign to</label>
+                <div class="col-sm-9">
+                  <select name="assigned_to" id="assigned_to" class="form-control" multiple required>
+                    {% for team in teams %}
+                      <option value="{{ team.id }}">{{ team.user.email }}</option>
+                    {% endfor %}
+                  </select>
+                  <small class="text-muted">Hold Ctrl (Windows) or Command (Mac) to select multiple members.</small>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="row mb-3">
+                <div class="col-sm-9 offset-sm-3">
+                  <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

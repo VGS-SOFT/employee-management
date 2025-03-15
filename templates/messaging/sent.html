@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Sent Messages{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title">Sent Messages</h5>
+            <a href="{% url 'compose_message' %}" class="btn btn-primary">
+              <i class="bi bi-envelope-plus"></i> New Message
+            </a>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-striped datatable">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>To</th>
+                  <th>Type</th>
+                  <th>Sent Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for message in sent_messages %}
+                  <tr>
+                    <td>{{ message.thread.subject }}</td>
+                    <td>
+                      {% if message.message_type == 'ALL' %}
+                        All Users
+                      {% elif message.message_type == 'TEAM' %}
+                        Selected Teams
+                      {% elif message.message_type == 'MANAGEMENT' %}
+                        Management
+                      {% else %}
+                        {{ message.recipients.all|join:', ' }}
+                      {% endif %}
+                    </td>
+                    <td>{{ message.get_message_type_display }}</td>
+                    <td>{{ message.created_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                      <a href="{% url 'view_thread' message.thread.id %}" class="btn btn-sm btn-info">
+                        <i class="bi bi-eye"></i> View
+                      </a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center">No sent messages</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block script %}
+<script>
+  $(document).ready(function() {
+    $('.datatable').DataTable({
+      "order": [[3, "desc"]]
+    });
+  });
+</script>
+{% endblock %}

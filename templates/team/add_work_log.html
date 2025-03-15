@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Work Log{% endblock %}
+
+{% block style %}
+<!-- Add Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css">
+<style>
+  /* Style for AM/PM toggle */
+  .flatpickr-am-pm {
+    cursor: pointer;
+    text-align: center;
+    font-weight: bold;
+    padding: 5px;
+    width: 50px !important;
+    user-select: none;
+  }
+  
+  /* Highlight AM/PM on hover */
+  .flatpickr-am-pm:hover {
+    background: #e6e6e6;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Add Work Log</h5>
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <!-- Task Selection -->
+            <div class="row mb-3">
+              <label for="task" class="col-sm-3 col-form-label">Task</label>
+              <div class="col-sm-9">
+                <select name="task" id="task" class="form-select" required>
+                  <option value="">Select Task</option>
+                  {% for task in tasks %}
+                    <option value="{{ task.id }}">
+                      {{ task.name }} ({{ task.project.name }} - {{ task.module.name }})
+                    </option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a task.</div>
+              </div>
+            </div>
+
+            <!-- Time Inputs -->
+            <div class="row mb-3">
+              <label for="start_time" class="col-sm-3 col-form-label">Start Time</label>
+              <div class="col-sm-9">
+                <input type="time" class="form-control" id="start_time" name="start_time" required>
+                <div class="invalid-feedback">Please enter start time.</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label for="end_time" class="col-sm-3 col-form-label">End Time</label>
+              <div class="col-sm-9">
+                <input type="time" class="form-control" id="end_time" name="end_time" required>
+                <div class="invalid-feedback">Please enter end time.</div>
+              </div>
+            </div>
+
+            <!-- Date Input -->
+            <div class="row mb-3">
+              <label for="log_date" class="col-sm-3 col-form-label">Date</label>
+              <div class="col-sm-9">
+                <input type="date" class="form-control" id="log_date" name="log_date" required>
+                <div class="invalid-feedback">Please select a date.</div>
+              </div>
+            </div>
+
+            <!-- Status Selection -->
+            <div class="row mb-3">
+              <label for="status" class="col-sm-3 col-form-label">Status</label>
+              <div class="col-sm-9">
+                <select name="status" id="status" class="form-select" required>
+                  <option value="">Select Status</option>
+                  {% for status in statuses %}
+                    <option value="{{ status.id }}">{{ status.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select a status.</div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="row mb-3">
+              <label for="description" class="col-sm-3 col-form-label">Description</label>
+              <div class="col-sm-9">
+                <textarea name="description" id="description" class="form-control" rows="4" required></textarea>
+                <div class="invalid-feedback">Please enter a description.</div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="row mb-3">
+              <div class="col-sm-9 offset-sm-3">
+                <button type="submit" class="btn btn-primary">Submit Work Log</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block script %}
+<script>
+  // Set default times and date when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get current date and time
+    const now = new Date();
+    
+    // Set current date
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const currentDate = `${year}-${month}-${day}`;
+    
+    // Set current time
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = `${hours}:${minutes}`;
+    
+    // Set default values
+    document.getElementById('log_date').value = currentDate;
+    document.getElementById('start_time').value = currentTime;
+    document.getElementById('end_time').value = currentTime;
+  });
+
+  // Form validation
+  (function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        form.classList.add('was-validated')
+      }, false)
+    })
+  })()
+
+  // Validate end time is after start time
+  document.getElementById('end_time').addEventListener('change', function() {
+    const startTime = document.getElementById('start_time').value;
+    const endTime = this.value;
+    
+    if (endTime <= startTime) {
+      this.setCustomValidity('End time must be after start time');
+    } else {
+      this.setCustomValidity('');
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+
+{% block title %}All Team Work Logs{% endblock %}
+
+{% block style %}
+<style>
+    .page-container {
+        position: relative;
+        width: 100%;
+        transition: padding 0.3s ease;
+    }
+
+    body:not(.toggle-sidebar) .page-container {
+        padding-right: 20px;
+    }
+
+    .page-header {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2rem;
+        width: 100%;
+    }
+
+    .filters-card,
+    .main-card {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    .filters-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2rem;
+    }
+
+    .main-card {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+        padding: 1.5rem;
+    }
+
+    .card-title {
+        color: #2c2c2c;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .btn-view-desc {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .btn-view-desc:hover {
+        transform: translateY(-1px);
+    }
+
+    .desc-modal .modal-content {
+        border: none;
+        border-radius: 0.5rem;
+    }
+
+    .desc-modal .modal-header {
+        background: #f8f9fa;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .desc-modal .modal-body {
+        padding: 1.5rem;
+    }
+
+    .desc-info {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+
+    .desc-text {
+        background: #fff;
+        padding: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        white-space: pre-wrap;
+    }
+
+    .stats-row {
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-card h3 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #2c2c2c;
+    }
+
+    .stat-card p {
+        color: #6c757d;
+        margin-bottom: 0;
+        font-size: 0.9rem;
+    }
+
+    .dataTables_wrapper .row {
+        margin: 0;
+        align-items: center;
+    }
+
+    /* DataTable Specific Styling */
+    .dataTables_wrapper {
+        padding: 1rem 0;
+    }
+
+    .dataTables_length {
+        float: left;
+        margin-bottom: 1rem;
+    }
+
+    .dataTables_filter {
+        float: right;
+        margin-bottom: 1rem;
+    }
+
+    .dataTables_info {
+        float: left;
+        padding-top: 0.85em;
+    }
+
+    .dataTables_paginate {
+        float: right;
+        margin-top: 0.5rem;
+    }
+
+    .main-card {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+    }
+
+    .table-responsive {
+        margin: 1rem 0;
+        clear: both;
+    }
+
+    /* Improve table cell padding */
+    .table > tbody > tr > td,
+    .table > thead > tr > th {
+        padding: 1rem;
+        white-space: nowrap;
+    }
+
+    /* Description column specific style */
+    .table > tbody > tr > td:last-child {
+        white-space: normal;
+        max-width: 300px;
+    }
+
+    /* Custom length menu styling */
+    .custom-length-menu {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .custom-length-input {
+        width: 80px !important;
+        display: none;
+    }
+
+    /* Pagination styling */
+    .paginate_button {
+        padding: 0.375rem 0.75rem;
+        margin: 0 0.2rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+
+    .paginate_button.current {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="h3 mb-0">Team Work Logs</h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'management_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Work Logs</li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Filters Card -->
+<div class="filters-card">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="form-group">
+                <label class="filter-label">Team Member</label>
+                <select id="teamMemberFilter" class="form-select">
+                    <option value="">All Team Members</option>
+                    {% for member in team_members %}
+                        <option value="{{ member.user.name }}">{{ member.user.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="form-group">
+                <label class="filter-label">Status</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="Completed">Completed</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="form-group">
+                <label class="filter-label">Date Range</label>
+                <input type="date" id="dateFilter" class="form-control">
+            </div>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button id="resetFilters" class="btn btn-secondary w-100">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Filters
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Card -->
+<div class="main-card">
+    <div class="table-responsive">
+        <table id="workLogsTable" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Team Member</th>
+                    <th>Task</th>
+                    <th>Project - Module</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in work_logs %}
+                <tr>
+                    <td>{{ log.created_at|date:'Y-m-d' }}</td>
+                    <td>{{ log.team_member.user.name }}</td>
+                    <td>{{ log.task.name }}</td>
+                    <td>{{ log.task.project.name }} - {{ log.task.module.name }}</td>
+                    <td>{{ log.start_time|date:'h:i A' }}</td>
+                    <td>{{ log.end_time|date:'h:i A' }}</td>
+                    <td>{{ log.end_time|timeuntil:log.start_time }}</td>
+                    <td>
+                        <span class="status-badge badge {% if log.status.name == 'Completed' %}bg-success{% elif log.status.name == 'In Progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                            {{ log.status.name }}
+                        </span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-info btn-view-desc" data-bs-toggle="modal" data-bs-target="#descModal{{ log.id }}">
+                            <i class="bi bi-eye me-1"></i>View
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Description Modals -->
+{% for log in work_logs %}
+<div class="modal fade desc-modal" id="descModal{{ log.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Work Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="desc-info">
+                    <div class="row mb-2">
+                        <div class="col-4"><strong>Team Member:</strong></div>
+                        <div class="col-8">{{ log.team_member.user.name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-4"><strong>Task:</strong></div>
+                        <div class="col-8">{{ log.task.name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-4"><strong>Date:</strong></div>
+                        <div class="col-8">{{ log.created_at|date:'F d, Y' }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4"><strong>Duration:</strong></div>
+                        <div class="col-8">{{ log.end_time|timeuntil:log.start_time }}</div>
+                    </div>
+                </div>
+                <h6 class="mb-3">Description:</h6>
+                <div class="desc-text">{{ log.description }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable with enhanced features
+    const table = $('#workLogsTable').DataTable({
+        dom: '<"row mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search records...",
+            lengthMenu: `Show <select>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="-1">Custom</option>
+                        </select> entries`,
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            paginate: {
+                first: '«',
+                previous: '‹',
+                next: '›',
+                last: '»'
+            }
+        },
+        pageLength: 10,
+        lengthMenu: [[5, 10, 15, 25, 50, 100, -1], [5, 10, 15, 25, 50, 100, "Custom"]],
+        order: [[0, 'desc']],
+        columnDefs: [
+            {
+                targets: 8, // Description column
+                orderable: false,
+                searchable: false,
+                width: '300px'
+            }
+        ],
+        initComplete: function() {
+            // Add custom length input
+            const lengthSelect = $('.dataTables_length select');
+            const customInput = $('<input type="number" class="form-control custom-length-input" min="1" max="1000">');
+            
+            lengthSelect.after(customInput);
+            
+            lengthSelect.on('change', function() {
+                if ($(this).val() === '-1') {
+                    customInput.show().focus();
+                } else {
+                    customInput.hide();
+                }
+            });
+
+            customInput.on('change', function() {
+                const value = parseInt($(this).val());
+                if (value && value > 0) {
+                    table.page.len(value).draw();
+                }
+            });
+        }
+    });
+
+    // Custom Filters
+    $('#teamMemberFilter, #statusFilter, #dateFilter').on('change', function() {
+        table.draw();
+    });
+
+    $('#resetFilters').on('click', function() {
+        $('#teamMemberFilter, #statusFilter').val('');
+        $('#dateFilter').val('');
+        table.search('').columns().search('').draw();
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ thread.subject }}{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <!-- Header -->
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h5 class="card-title m-0">{{ thread.subject }}</h5>
+              <small class="text-muted">Conversation started {{ thread.created_at|date:"M d, Y" }}</small>
+            </div>
+            <a href="{% url 'messages_inbox' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-left"></i> Back to Inbox
+            </a>
+          </div>
+
+          <!-- Message Thread -->
+          <div class="message-thread mb-4">
+            {% for message in thread.messages.all %}
+              <div class="message-item {% if message.sender == request.user %}sent{% else %}received{% endif %}">
+                <div class="message-header">
+                  <span class="sender">{{ message.sender.name }}</span>
+                  <span class="date">{{ message.created_at|date:"M d, Y H:i" }}</span>
+                  {% if message.message_type == 'ALL' %}
+                    <span class="badge bg-info ms-2">Broadcast</span>
+                  {% endif %}
+                </div>
+                <div class="message-content">
+                  {{ message.content|linebreaks }}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- Reply Form -->
+          <div class="reply-form">
+            <form method="POST">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label class="form-label">Your Reply</label>
+                <textarea name="content" class="form-control" rows="3" required></textarea>
+              </div>
+              <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-reply"></i> Send Reply
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block style %}
+<style>
+.message-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.message-item {
+  padding: 1rem;
+  border-radius: 8px;
+  max-width: 80%;
+}
+
+.message-item.received {
+  background-color: #f8f9fa;
+  align-self: flex-start;
+}
+
+.message-item.sent {
+  background-color: #e3effd;
+  align-self: flex-end;
+}
+
+.message-header {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.message-header .sender {
+  font-weight: 600;
+}
+
+.message-header .date {
+  color: #6c757d;
+  margin-left: 0.5rem;
+}
+
+.message-content {
+  white-space: pre-wrap;
+}
+
+.message-content p:last-child {
+  margin-bottom: 0;
+}
+</style>
+{% endblock %}

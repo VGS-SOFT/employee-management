@@ -1,0 +1,198 @@
+.container {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: row;
+    background-color: #f6f9ff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    gap: 30px; /* Added gap between the question section and sidebar */
+  }
+
+  .question-section {
+    flex: 2; /* Take up more space for questions */
+    margin-left: 30px;
+  }
+
+  .question-container {
+    display: none;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+
+  .question-container.active {
+    display: block;
+  }
+
+  .question-container h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group .radio {
+    margin-bottom: 10px;
+  }
+
+  .form-group .radio label {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .form-group .radio input[type=radio] {
+    margin-right: 10px;
+  }
+
+  .btn {
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-primary:hover {
+    background-color: #0056b3;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-primary.prev-button {
+    background-color: #6c757d;
+  }
+
+  .btn-primary.prev-button:hover {
+    background-color: #5a6268;
+  }
+
+  .btn-primary.next-button {
+    background-color: #28a745;
+  }
+
+  .btn-primary.next-button:hover {
+    background-color: #218838;
+  }
+
+  .btn-primary.submit-button {
+    background-color: #17a2b8;
+  }
+
+  .btn-primary.submit-button:hover {
+    background-color: #138496;
+  }
+
+  #side-bar-right {
+    border-radius: 20px;
+    width: 300px; /* Adjusted width for better fit */
+    box-shadow: 5px 5px 12px rgba(0, 0, 0, 0.2),
+                -5px -5px 12px rgba(0, 0, 0, 0.2),
+                5px -5px 12px rgba(0, 0, 0, 0.2),
+                -5px 5px 12px rgba(0, 0, 0, 0.2);
+    background-color: #fff;
+    padding: 20px;
+    margin-left: 20px;
+    margin-right: 40px;
+  }
+
+  #submit-full-exam {
+    margin: 20px 0;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 5px;
+  }
+
+  .right-canva-inner-sections {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    box-shadow: -2px 2px 6px rgba(0, 0, 0, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px;
+    background-color: transparent;
+    color: #333;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .right-canva-inner-sections.attended {
+    background-color: #4caf50; /* Example color for attended questions */
+    color: #fff;
+  }
+
+  .right-canva-inner-sections.active {
+    border-color: #007bff; /* Highlight color */
+    box-shadow: 0 0 12px rgba(0, 123, 255, 0.5); /* Example highlight effect */
+  }
+
+  .question-number {
+    font-weight: bold;
+    font-size: 20px;
+    margin-right: 10px;
+  }
+
+  .popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+  }
+
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+  }
+
+  .popup h2 {
+    margin-top: 0;
+  }
+
+  .popup button {
+    margin: 5px;
+  }
+
+  .popup .cancel-button {
+    background-color: #6c757d;
+  }
+
+  .popup .cancel-button:hover {
+    background-color: #5a6268;
+  }
+
+  .popup .submit-button {
+    background-color: #17a2b8;
+  }
+
+  .popup .submit-button:hover {
+    background-color: #138496;
+  }
