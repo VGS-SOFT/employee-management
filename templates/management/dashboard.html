@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Dashboard
+{% endblock %}
+
+{% block link %}
+  <link href="{% static 'assets/css/management/management_dashboard.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+  <div class="pagetitle">
+    <h1>Dashboard</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item active">Dashboard</li>
+      </ol>
+    </nav>
+  </div>
+
+  <section class="section dashboard">
+    <!-- Quick Stats Row -->
+    <div class="row">
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-card">
+          <div class="stat-card gradient-blue">
+            <h6 class="mb-2">Total Employees</h6>
+            <h2 class="mb-0">{{ total_employees }}</h2>
+            <div class="trend">Active team members</div>
+            <i class="bi bi-people icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-card">
+          <div class="stat-card gradient-green">
+            <h6 class="mb-2">Present Today</h6>
+            <h2 class="mb-0">{{ present_today }}</h2>
+            <div class="trend">{{ attendance_percentage }}% Attendance</div>
+            <i class="bi bi-person-check icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-card">
+          <div class="stat-card gradient-orange">
+            <h6 class="mb-2">Late Arrivals</h6>
+            <h2 class="mb-0">{{ late_arrivals }}</h2>
+            <div class="trend">{{ late_percentage }}% of present</div>
+            <i class="bi bi-clock-history icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6">
+        <div class="dashboard-card">
+          <div class="stat-card gradient-purple">
+            <h6 class="mb-2">New Employees</h6>
+            <h2 class="mb-0">{{ new_employees_count }}</h2>
+            <div class="trend">Total team size</div>
+            <i class="bi bi-person-plus icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity and Quick Actions Row -->
+    <div class="row">
+      <div class="col-xl-8">
+        <div class="dashboard-card">
+          <div class="recent-activity">
+            <h5 class="mb-4">
+              <i class="bi bi-activity me-2"></i>
+              Recent Activity
+            </h5>
+            {% for activity in recent_activities %}
+              <div class="activity-item">
+                <div class="d-flex justify-content-between">
+                  <h6 class="mb-0">{{ activity.title }}</h6>
+                  <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                </div>
+                <p class="text-muted mb-0">{{ activity.description }}</p>
+              </div>
+            {% empty %}
+              <div class="text-center text-muted">
+                <i class="bi bi-info-circle"></i>
+                No recent activities
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4">
+        <div class="dashboard-card">
+          <div class="quick-actions">
+            <h5 class="mb-4">
+              <i class="bi bi-lightning me-2"></i>
+              Quick Actions
+            </h5>
+            <a href="" class="btn btn-primary w-100 mb-2">
+              <i class="bi bi-person-plus me-2"></i>
+              Add New Employee
+            </a>
+            <a href="{% url 'all_projects' %}" class="btn btn-info w-100 mb-2">
+              <i class="bi bi-kanban me-2"></i>
+              Manage Projects
+            </a>
+            <a href="{% url 'present_employees' %}" class="btn btn-success w-100 mb-2">
+              <i class="bi bi-clock me-2"></i>
+              View Attendance
+            </a>
+            <a href="{% url 'all_employees' %}" class="btn btn-warning w-100">
+              <i class="bi bi-people me-2"></i>
+              View All Employees
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

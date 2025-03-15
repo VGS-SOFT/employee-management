@@ -1,6 +1,7 @@
 # employee_management/urls.py
 from django.urls import path, include
 from . import views
+from .view import authentication_view, management_view
 
 urlpatterns = [
     path("", views.go_to_login, name="go_to_login"),
@@ -8,17 +9,18 @@ urlpatterns = [
         "auth/",
         include(
             [
-                path("login/", views.login_view, name="login"),
-                path("logout/", views.logout_view, name="logout"),
+                path("login/", authentication_view.login_view, name="login"),
+                path("logout/", authentication_view.logout_view, name="logout"),
             ]
         ),
     ),
+    
     # Management URLs.
     path(
         "management/",
         include(
             [
-                path("", views.management_dashboard, name="management_dashboard"),
+                path("", management_view.dashboard, name="management_dashboard"),
                 path("all-employees", views.all_employees, name="all_employees"),
                 path(
                     "present-employees",

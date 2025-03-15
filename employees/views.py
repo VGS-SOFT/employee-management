@@ -50,120 +50,120 @@ def go_to_login(request):
     return HttpResponsePermanentRedirect(reverse("login"))
 
 
-@never_cache
-def login_view(request):
-    """Handle user authentication and login"""
-    # Redirect if user is already logged in
-    if request.user.is_authenticated:
-        if request.user.role == "ADMIN":
-            return redirect("/admin/")
-        elif request.user.role == "MANAGEMENT":
-            return redirect("management_dashboard")
-        else:  # TEAM role
-            return redirect("team_dashboard")
+# @never_cache
+# def login_view(request):
+#     """Handle user authentication and login"""
+#     # Redirect if user is already logged in
+#     if request.user.is_authenticated:
+#         if request.user.role == "ADMIN":
+#             return redirect("/admin/")
+#         elif request.user.role == "MANAGEMENT":
+#             return redirect("management_dashboard")
+#         else:  # TEAM role
+#             return redirect("team_dashboard")
 
-    if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        remember_me = request.POST.get("remember_me")
+#     if request.method == "POST":
+#         username = request.POST.get("username")
+#         password = request.POST.get("password")
+#         remember_me = request.POST.get("remember_me")
 
-        user = authenticate(request, username=username, password=password)
+#         user = authenticate(request, username=username, password=password)
 
-        if user is not None:
-            login(request, user)
+#         if user is not None:
+#             login(request, user)
 
-            # Set cookie if remember me is checked
-            response = redirect(
-                "management_dashboard"
-                if user.role == "MANAGEMENT"
-                else "team_dashboard"
-            )
-            if remember_me:
-                response.set_cookie(
-                    "remembered_username", username, max_age=30 * 24 * 60 * 60
-                )  # 30 days
-            else:
-                response.delete_cookie("remembered_username")
+#             # Set cookie if remember me is checked
+#             response = redirect(
+#                 "management_dashboard"
+#                 if user.role == "MANAGEMENT"
+#                 else "team_dashboard"
+#             )
+#             if remember_me:
+#                 response.set_cookie(
+#                     "remembered_username", username, max_age=30 * 24 * 60 * 60
+#                 )  # 30 days
+#             else:
+#                 response.delete_cookie("remembered_username")
 
-            return response
-        else:
-            messages.error(request, "Invalid username or password")
-            return redirect("login")
+#             return response
+#         else:
+#             messages.error(request, "Invalid username or password")
+#             return redirect("login")
 
-    # Get remembered username from cookie
-    remembered_username = request.COOKIES.get("remembered_username", "")
-    return render(
-        request,
-        "authentication/login.html",
-        {"remembered_username": remembered_username},
-    )
+#     # Get remembered username from cookie
+#     remembered_username = request.COOKIES.get("remembered_username", "")
+#     return render(
+#         request,
+#         "authentication/login.html",
+#         {"remembered_username": remembered_username},
+#     )
 
 
-@login_required
-def logout_view(request):
-    """Handle user logout"""
-    # Only remove the session, keep the remember_me cookie if it exists
-    logout(request)
-    messages.success(request, "You have been successfully logged out")
-    return redirect("login")
+# @login_required
+# def logout_view(request):
+#     """Handle user logout"""
+#     # Only remove the session, keep the remember_me cookie if it exists
+#     logout(request)
+#     messages.success(request, "You have been successfully logged out")
+#     return redirect("login")
   
 
 
 
-@login_required
-def management_dashboard(request):
-    if request.user.role != "MANAGEMENT":
-        logout(request)
-        messages.error(request, "Access denied. Management privileges required.")
-        return redirect("login")
+# @login_required
+# def management_dashboard(request):
+#     if request.user.role != "MANAGEMENT":
+#         logout(request)
+#         messages.error(request, "Access denied. Management privileges required.")
+#         return redirect("login")
 
-    today = timezone.now().date()
+#     today = timezone.now().date()
 
-    # Get all team members
-    team_members = User.objects.filter(role="TEAM", is_active=True)
-    total_employees = team_members.count()
+#     # Get all team members
+#     team_members = User.objects.filter(role="TEAM", is_active=True)
+#     total_employees = team_members.count()
 
-    # Get today's attendance
-    attendance = TimeRecord.objects.filter(
-        check_in__date=today
-    ).select_related("user")
-    present_today = attendance.values("user").distinct().count()
-    late_arrivals = calculate_late_arrivals(attendance)
+#     # Get today's attendance
+#     attendance = TimeRecord.objects.filter(
+#         check_in__date=today
+#     ).select_related("user")
+#     present_today = attendance.values("user").distinct().count()
+#     late_arrivals = calculate_late_arrivals(attendance)
 
-    # Calculate attendance percentage
-    attendance_percentage = round((present_today / total_employees * 100), 1) if total_employees > 0 else 0
-    late_percentage = round((late_arrivals / present_today * 100), 1) if present_today > 0 else 0
+#     # Calculate attendance percentage
+#     attendance_percentage = round((present_today / total_employees * 100), 1) if total_employees > 0 else 0
+#     late_percentage = round((late_arrivals / present_today * 100), 1) if present_today > 0 else 0
 
-    # Get recent activities
-    recent_activities = []
+#     # Get recent activities
+#     recent_activities = []
     
-    # Add check-ins
-    recent_checkins = TimeRecord.objects.filter(
-        check_in__date=today
-    ).select_related('user')[:5]
+#     # Add check-ins
+#     recent_checkins = TimeRecord.objects.filter(
+#         check_in__date=today
+#     ).select_related('user')[:5]
     
-    for checkin in recent_checkins:
-        recent_activities.append({
-            'title': checkin.user.name,
-            'description': f"Arrived at {checkin.check_in.strftime('%I:%M %p')}",
-            'timestamp': checkin.check_in
-        })
+#     for checkin in recent_checkins:
+#         recent_activities.append({
+#             'title': checkin.user.name,
+#             'description': f"Arrived at {checkin.check_in.strftime('%I:%M %p')}",
+#             'timestamp': checkin.check_in
+#         })
 
-    context = {
-        "total_employees": total_employees,
-        "present_today": present_today,
-        "late_arrivals": late_arrivals,
-        "new_employees_count": Team.objects.filter(user__role="TEAM").count(),
-        "attendance_percentage": attendance_percentage,
-        "late_percentage": late_percentage,
-        "recent_activities": sorted(
-            recent_activities,
-            key=lambda x: x['timestamp'],
-            reverse=True
-        )[:10]
-    }
+#     context = {
+#         "total_employees": total_employees,
+#         "present_today": present_today,
+#         "late_arrivals": late_arrivals,
+#         "new_employees_count": Team.objects.filter(user__role="TEAM").count(),
+#         "attendance_percentage": attendance_percentage,
+#         "late_percentage": late_percentage,
+#         "recent_activities": sorted(
+#             recent_activities,
+#             key=lambda x: x['timestamp'],
+#             reverse=True
+#         )[:10]
+#     }
 
-    return render(request, "admins/dashboard.html", context)
+#     return render(request, "admins/dashboard.html", context)
 
 
 @login_required
