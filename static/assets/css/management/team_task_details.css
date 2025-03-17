@@ -1,0 +1,82 @@
+.page-container {
+    padding: 1.5rem;
+    transition: all 0.3s;
+}
+
+.page-header {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+    margin-bottom: 2rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.7rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
+    margin-bottom: 2rem;
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+}
+
+.task-details {
+    padding: 1.5rem;
+}
+
+.task-details .row {
+    margin-bottom: 1rem;
+}
+
+.task-details .fw-bold {
+    color: #344767;
+}
+
+.description-box {
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.btn-back {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    transform: translateY(-2px);
+}
+
+/* Custom scrollbar for description box */
+.description-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.description-box::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.description-box::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.description-box::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

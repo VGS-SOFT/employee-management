@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, time
 from calendar import monthrange
 from django.db.models import Sum, F, ExpressionWrapper, fields
 from django.db.models.functions import ExtractMonth, ExtractYear
+
+from employees.view.management_view import get_status_display
 from .models import (
     TicketAttachment,
     User,
@@ -48,251 +50,6 @@ import json
 # Common Views
 def go_to_login(request):
     return HttpResponsePermanentRedirect(reverse("login"))
-
-
-# @never_cache
-# def login_view(request):
-#     """Handle user authentication and login"""
-#     # Redirect if user is already logged in
-#     if request.user.is_authenticated:
-#         if request.user.role == "ADMIN":
-#             return redirect("/admin/")
-#         elif request.user.role == "MANAGEMENT":
-#             return redirect("management_dashboard")
-#         else:  # TEAM role
-#             return redirect("team_dashboard")
-
-#     if request.method == "POST":
-#         username = request.POST.get("username")
-#         password = request.POST.get("password")
-#         remember_me = request.POST.get("remember_me")
-
-#         user = authenticate(request, username=username, password=password)
-
-#         if user is not None:
-#             login(request, user)
-
-#             # Set cookie if remember me is checked
-#             response = redirect(
-#                 "management_dashboard"
-#                 if user.role == "MANAGEMENT"
-#                 else "team_dashboard"
-#             )
-#             if remember_me:
-#                 response.set_cookie(
-#                     "remembered_username", username, max_age=30 * 24 * 60 * 60
-#                 )  # 30 days
-#             else:
-#                 response.delete_cookie("remembered_username")
-
-#             return response
-#         else:
-#             messages.error(request, "Invalid username or password")
-#             return redirect("login")
-
-#     # Get remembered username from cookie
-#     remembered_username = request.COOKIES.get("remembered_username", "")
-#     return render(
-#         request,
-#         "authentication/login.html",
-#         {"remembered_username": remembered_username},
-#     )
-
-
-# @login_required
-# def logout_view(request):
-#     """Handle user logout"""
-#     # Only remove the session, keep the remember_me cookie if it exists
-#     logout(request)
-#     messages.success(request, "You have been successfully logged out")
-#     return redirect("login")
-  
-
-
-
-# @login_required
-# def management_dashboard(request):
-#     if request.user.role != "MANAGEMENT":
-#         logout(request)
-#         messages.error(request, "Access denied. Management privileges required.")
-#         return redirect("login")
-
-#     today = timezone.now().date()
-
-#     # Get all team members
-#     team_members = User.objects.filter(role="TEAM", is_active=True)
-#     total_employees = team_members.count()
-
-#     # Get today's attendance
-#     attendance = TimeRecord.objects.filter(
-#         check_in__date=today
-#     ).select_related("user")
-#     present_today = attendance.values("user").distinct().count()
-#     late_arrivals = calculate_late_arrivals(attendance)
-
-#     # Calculate attendance percentage
-#     attendance_percentage = round((present_today / total_employees * 100), 1) if total_employees > 0 else 0
-#     late_percentage = round((late_arrivals / present_today * 100), 1) if present_today > 0 else 0
-
-#     # Get recent activities
-#     recent_activities = []
-    
-#     # Add check-ins
-#     recent_checkins = TimeRecord.objects.filter(
-#         check_in__date=today
-#     ).select_related('user')[:5]
-    
-#     for checkin in recent_checkins:
-#         recent_activities.append({
-#             'title': checkin.user.name,
-#             'description': f"Arrived at {checkin.check_in.strftime('%I:%M %p')}",
-#             'timestamp': checkin.check_in
-#         })
-
-#     context = {
-#         "total_employees": total_employees,
-#         "present_today": present_today,
-#         "late_arrivals": late_arrivals,
-#         "new_employees_count": Team.objects.filter(user__role="TEAM").count(),
-#         "attendance_percentage": attendance_percentage,
-#         "late_percentage": late_percentage,
-#         "recent_activities": sorted(
-#             recent_activities,
-#             key=lambda x: x['timestamp'],
-#             reverse=True
-#         )[:10]
-#     }
-
-#     return render(request, "admins/dashboard.html", context)
-
-
-@login_required
-def all_employees(request):
-    if request.user.role != "MANAGEMENT":
-        logout(request)
-        messages.error(request, "Access denied. Management privileges required.")
-        return redirect("login")
-
-    # Get active users first
-    active_users = User.objects.filter(is_active=True, role="TEAM").values_list(
-        "id", flat=True
-    )
-
-    # Then get team members whose users are active
-    team_members = (
-        Team.objects.filter(user_id__in=active_users)
-        .select_related("user")
-        .values(
-            "team_id",
-            "department",
-            "user__email",  # Get email from User model
-            "user__phone",  # Get phone from User model
-        )
-        .all()
-    )
-
-    context = {"data": team_members}
-    return render(request, "admins/all_employees.html", context)
-
-
-@login_required
-def present_employees(request):
-    if request.user.role != "MANAGEMENT":
-        logout(request)
-        messages.error(request, "Access denied. Management privileges required.")
-        return redirect("login")
-
-    today = timezone.now().date()
-    attendance = (
-        TimeRecord.objects.filter(check_in__date=today)
-        .select_related("user", "user__team")
-        .prefetch_related("breaks")  # Add this to get personal breaks
-        .values(
-            "id",  # Need this for breaks lookup
-            "user__team__team_id",
-            "user__email",
-            "user__phone",
-            "user__team__department",
-            "check_in",
-            "check_out",
-        )
-        .all()
-    )
-
-    # Calculate duration and get break information
-    for record in attendance:
-        # Get personal breaks for this record
-        breaks = PersonalBreak.objects.filter(
-            time_record_id=record["id"], check_out__date=today
-        )
-
-        total_break_time = timedelta()
-        for break_record in breaks:
-            if break_record.check_in:
-                break_duration = break_record.check_in - break_record.check_out
-                total_break_time += break_duration
-
-        # Calculate total duration
-        if record["check_out"]:
-            total_duration = record["check_out"] - record["check_in"]
-            working_duration = total_duration - total_break_time
-
-            # Format durations
-            hours = working_duration.seconds // 3600
-            minutes = (working_duration.seconds % 3600) // 60
-            record["working_duration"] = f"{hours:02d}:{minutes:02d}"
-
-            hours = total_duration.seconds // 3600
-            minutes = (total_duration.seconds % 3600) // 60
-            record["total_duration"] = f"{hours:02d}:{minutes:02d}"
-        else:
-            record["working_duration"] = "-"
-            record["total_duration"] = "-"
-
-    context = {"data": attendance}
-    return render(request, "admins/present_employees.html", context)
-
-
-@login_required
-def add_employee(request):
-    """View for adding new employees"""
-    if request.user.role != "MANAGEMENT":
-        messages.error(request, "Access denied. Management privileges required.")
-        return redirect("team_dashboard")
-
-    if request.method == "POST":
-        try:
-            # Create new employee
-            employee = User.objects.create(
-                username=request.POST.get("username"),
-                email=request.POST.get("email"),
-                first_name=request.POST.get("first_name"),
-                last_name=request.POST.get("last_name"),
-                department=request.POST.get("department"),
-                role="TEAM",
-                hire_date=timezone.now().date(),
-                emergency_contact=request.POST.get("emergency_contact", ""),
-                notes=request.POST.get("notes", ""),
-            )
-
-            # Set password
-            employee.set_password(request.POST.get("password"))
-            employee.save()
-
-            # Assign default work schedule
-            default_schedule = WorkSchedule.objects.filter(is_default=True).first()
-            if default_schedule:
-                default_schedule.employees.add(employee)
-
-            messages.success(
-                request, f"Employee {employee.get_full_name()} added successfully"
-            )
-            return redirect("management_dashboard")
-
-        except Exception as e:
-            messages.error(request, f"Error creating employee: {str(e)}")
-
-    return render(request, "employee_management/add_employee.html")
 
 
 @login_required
@@ -361,22 +118,6 @@ def edit_time_record(request, record_id):
         except Exception as e:
             messages.error(request, f"Error updating record: {str(e)}")
 
-    context = {"record": record}
-    return render(request, "employee_management/edit_time_record.html", context)
-
-
-@login_required
-def all_projects(request):
-    if request.user.role != "MANAGEMENT":
-        messages.error(request, "Only management users can view projects.")
-        return redirect("dashboard")
-
-    projects = Projects.objects.all()
-    return render(request, "admins/all_projects.html", {"data": projects})
-
-
-@login_required
-def add_projects(request):
     # Check if user is management
     if request.user.role != "MANAGEMENT":
         messages.error(request, "Only management users can create projects.")
@@ -417,57 +158,8 @@ def add_projects(request):
     context = {"statuses": statuses}
     return render(request, "admins/add_projects.html", context)
 
-
-@login_required
-def delete_project(request, id: int):
-    if request.user.role != "MANAGEMENT":
-        logout(request)
-        messages.error(request, "Only management users can delete projects.")
-        return redirect("login")
-
-    try:
-        project = get_object_or_404(Projects, id=id)
-        project.delete()
-        messages.success(request, "Project deleted successfully")
-    except Exception as e:
-        print(f"Error while deleting the project: {e}")
-        messages.error(request, "An error occurred while deleting the project.")
-
-    return redirect("all_projects")
-
-
-@login_required
-def all_modules(request):
-    if request.user.role != "MANAGEMENT":
-        logout(request)
-        messages.error(request, "Only management users can delete projects.")
-        return redirect("login")
-
-    try:
-        data = Modules.objects.filter(is_active=True)
-        context = {"data": data}
-        return render(request, "admins/all_modules.html", context)
-    except Exception as es:
-        print("Error while fetching the data from the all_modules\n\n", es)
-        return redirect("all_projects")
-
-
-@login_required
-def delete_module(request, id: int):
-    if request.user.role != "MANAGEMENT":
-        logout(request)
-        messages.error(request, "Only management users can delete modules.")
-        return redirect("login")
-
-    try:
-        module = get_object_or_404(Modules, id=id)
-        module.delete()
-        messages.success(request, "module deleted successfully")
-    except Exception as e:
-        print(f"Error while deleting the module: {e}")
-        messages.error(request, "An error occurred while deleting the module.")
-
-    return redirect("all_modules")
+    context = {"record": record}
+    return render(request, "employee_management/edit_time_record.html", context)
 
 
 @login_required
@@ -691,18 +383,18 @@ def check_in_out(request):
         time_record = TimeRecord.objects.filter(user=user, check_in__date=today).first()
 
         # Check if user is trying to check in through the action value
-        if request.method == 'POST' and request.POST.get('action') == 'checkin':
+        if request.method == "POST" and request.POST.get("action") == "checkin":
             # Check for pending checkouts before allowing check-in
             pending_checkout = TimeRecord.objects.filter(
-                user=user,
-                check_in__lt=timezone.now().date(),
-                check_out__isnull=True
+                user=user, check_in__lt=timezone.now().date(), check_out__isnull=True
             ).first()
-            
+
             if pending_checkout:
                 # Instead of redirecting right away, add an error message that will be displayed
-                messages.error(request, 
-                    "You have an incomplete check-out from a previous day. Please submit a request before checking in.")
+                messages.error(
+                    request,
+                    "You have an incomplete check-out from a previous day. Please submit a request before checking in.",
+                )
                 # We'll add a special parameter to indicate this error
                 return redirect(f"{reverse('login')}?pending_checkout=true")
 
@@ -712,7 +404,7 @@ def check_in_out(request):
                 return redirect("login")
 
             TimeRecord.objects.create(
-                user=user, check_in=current_time, late_reason=reason    
+                user=user, check_in=current_time, late_reason=reason
             )
             messages.success(request, "Successfully checked in")
 
@@ -735,15 +427,16 @@ def check_in_out(request):
             # Get the team instance for the current user
             try:
                 team = Team.objects.get(user=time_record.user)
-                
+
                 # Check if at least one worklog exists for current date
                 has_worklog = WorkLog.objects.filter(
-                    team_member=team,
-                    start_time__date=timezone.now().date()
+                    team_member=team, start_time__date=timezone.now().date()
                 ).exists()
 
                 if not has_worklog:
-                    messages.error(request, "Please add at least one work log before checking out")
+                    messages.error(
+                        request, "Please add at least one work log before checking out"
+                    )
                     return redirect("login")
 
             except Team.DoesNotExist:
@@ -866,6 +559,7 @@ def team_view_all_task(request):
     context = {"data": data}
     return render(request, "team/tasks.html", context)
 
+
 @login_required
 def team_view_add_task(request):
     if request.method == "POST":
@@ -886,12 +580,12 @@ def team_view_add_task(request):
                 module_id=module_id,
                 status_id=status_id,
                 manager_id=manager_id,  # This should be a User UUID
-                created_by=Team.objects.get(user=request.user)
+                created_by=Team.objects.get(user=request.user),
             )
-            
+
             messages.success(request, "Task created successfully!")
             return redirect("team_view_all_task")
-            
+
         except Exception as e:
             messages.error(request, f"Error creating task: {str(e)}")
             return redirect("team_view_add_task")
@@ -900,7 +594,7 @@ def team_view_add_task(request):
     statuses = Status.objects.filter(is_active=True)
     projects = Projects.objects.filter(is_active=True)
     managers = Manager.objects.filter(is_active=True)
-    
+
     context = {
         "statuses": statuses,
         "projects": projects,
@@ -1219,76 +913,15 @@ def get_notification_context(request):
 
 @login_required
 def get_modules_for_project(request):
-    project_id = request.GET.get('project_id')
+    project_id = request.GET.get("project_id")
     if not project_id:
-        return JsonResponse({'modules': []})
-    
-    modules = Modules.objects.filter(
-        project_id=project_id,
-        is_active=True
-    ).values('id', 'name')
-    
-    return JsonResponse({'modules': list(modules)})
+        return JsonResponse({"modules": []})
 
+    modules = Modules.objects.filter(project_id=project_id, is_active=True).values(
+        "id", "name"
+    )
 
-@login_required
-def admin_task_details(request, task_id):
-    if request.user.role != "MANAGEMENT":
-        messages.error(request, "Access denied. Management privileges required.")
-        return redirect("login")
-
-    try:
-        task = get_object_or_404(TeamTask.objects.select_related(
-            'project',
-            'module',
-            'status',
-            'manager',
-            'created_by',
-            'created_by__user'  # This gets the user details of the team member
-        ), id=task_id)
-
-        context = {
-            "task": task,
-        }
-        return render(request, "admins/team_task_details.html", context)
-    except Exception as e:
-        messages.error(request, f"Error loading task details: {str(e)}")
-        return redirect("all_tasks")
-
-
-@login_required
-def management_view_all_tasks(request):
-    if request.user.role != "MANAGEMENT":
-        messages.error(request, "Access denied. Management privileges required.")
-        return redirect("login")
-
-    try:
-        # Get all tasks including both Team tasks and regular tasks
-        team_tasks = TeamTask.objects.select_related(
-            'project',
-            'module',
-            'status',
-            'manager',
-            'created_by',
-            'created_by__user'
-        ).filter(is_active=True)
-
-        regular_tasks = Task.objects.select_related(
-            'project',
-            'module',
-            'status',
-            'created_by',
-            'assigned_by'
-        ).prefetch_related('assigned_to').filter(is_active=True)
-
-        context = {
-            "team_tasks": team_tasks,
-            "regular_tasks": regular_tasks,
-        }
-        return render(request, "admins/all_tasks.html", context)
-    except Exception as e:
-        messages.error(request, f"Error loading tasks: {str(e)}")
-        return redirect("management_dashboard")
+    return JsonResponse({"modules": list(modules)})
 
 
 @login_required
@@ -1299,23 +932,25 @@ def add_work_log(request):
 
     try:
         team_member = Team.objects.get(user=request.user)
-        
+
         if request.method == "POST":
-            task_id = request.POST.get('task')
-            log_date = request.POST.get('log_date')
-            start_time = request.POST.get('start_time')
-            endtime = request.POST.get('end_time')
-            status_id = request.POST.get('status')
-            description = request.POST.get('description')
+            task_id = request.POST.get("task")
+            log_date = request.POST.get("log_date")
+            start_time = request.POST.get("start_time")
+            endtime = request.POST.get("end_time")
+            status_id = request.POST.get("status")
+            description = request.POST.get("description")
 
             # Combine date and time
-            start_datetime = datetime.strptime(f"{log_date} {start_time}", '%Y-%m-%d %H:%M')
-            end_datetime = datetime.strptime(f"{log_date} {endtime}", '%Y-%m-%d %H:%M')
+            start_datetime = datetime.strptime(
+                f"{log_date} {start_time}", "%Y-%m-%d %H:%M"
+            )
+            end_datetime = datetime.strptime(f"{log_date} {endtime}", "%Y-%m-%d %H:%M")
 
             # Validate end time is after start time
             if end_datetime <= start_datetime:
                 messages.error(request, "End time must be after start time")
-                return redirect('add_work_log')
+                return redirect("add_work_log")
 
             WorkLog.objects.create(
                 task_id=task_id,
@@ -1323,18 +958,17 @@ def add_work_log(request):
                 start_time=start_datetime,
                 end_time=end_datetime,
                 status_id=status_id,
-                description=description
+                description=description,
             )
 
             messages.success(request, "Work log added successfully!")
-            return redirect('view_work_logs')
+            return redirect("view_work_logs")
 
         # For GET request
         tasks = TeamTask.objects.filter(
-            created_by=team_member,
-            is_active=True
-        ).select_related('project', 'module')
-        
+            created_by=team_member, is_active=True
+        ).select_related("project", "module")
+
         statuses = Status.objects.filter(is_active=True)
 
         context = {
@@ -1356,56 +990,20 @@ def view_work_logs(request):
 
     try:
         team_member = Team.objects.get(user=request.user)
-        work_logs = WorkLog.objects.filter(
-            team_member=team_member
-        ).select_related(
-            'task',
-            'task__project',
-            'task__module',
-            'status'
-        ).order_by('-created_at')
+        work_logs = (
+            WorkLog.objects.filter(team_member=team_member)
+            .select_related("task", "task__project", "task__module", "status")
+            .order_by("-created_at")
+        )
 
         context = {
             "work_logs": work_logs,
         }
         return render(request, "team/view_work_logs.html", context)
-        
+
     except Exception as e:
         messages.error(request, f"Error: {str(e)}")
         return redirect("team_dashboard")
-
-
-@login_required
-def management_view_all_worklogs(request):
-    if request.user.role != "MANAGEMENT":
-        messages.error(request, "Access denied. Management privileges required.")
-        return redirect("login")
-
-    try:
-        # Get base queryset with all necessary related fields
-        work_logs = WorkLog.objects.select_related(
-            'team_member',
-            'team_member__user',
-            'task',
-            'task__project',
-            'task__module',
-            'status'
-        ).order_by('-created_at')
-
-        # Get unique team members for filtering
-        team_members = Team.objects.select_related('user').filter(
-            id__in=work_logs.values_list('team_member_id', flat=True)
-        ).distinct()
-
-        context = {
-            'work_logs': work_logs,
-            'team_members': team_members,
-        }
-        return render(request, "admins/view_all_worklogs.html", context)
-        
-    except Exception as e:
-        messages.error(request, f"Error loading work logs: {str(e)}")
-        return redirect("management_dashboard")
 
 
 @login_required
@@ -1438,11 +1036,13 @@ def add_team_task(request):
                 manager_id=manager_id,
                 status_id=status_id,
                 created_by=creator if request.user.role == "TEAM" else None,
-                created_by_management=creator if request.user.role == "MANAGEMENT" else None
+                created_by_management=(
+                    creator if request.user.role == "MANAGEMENT" else None
+                ),
             )
 
             messages.success(request, "Task created successfully!")
-            
+
             # Redirect based on role
             if request.user.role == "TEAM":
                 return redirect("view_team_tasks")
@@ -1460,14 +1060,16 @@ def add_team_task(request):
             "modules": modules,
             "managers": managers,
             "statuses": statuses,
-            "is_management": request.user.role == "MANAGEMENT"
+            "is_management": request.user.role == "MANAGEMENT",
         }
-        
+
         return render(request, "team/add_team_task.html", context)
 
     except Exception as e:
         messages.error(request, f"Error: {str(e)}")
-        return redirect("team_dashboard" if request.user.role == "TEAM" else "management_dashboard")
+        return redirect(
+            "team_dashboard" if request.user.role == "TEAM" else "management_dashboard"
+        )
 
 
 @login_required
@@ -1482,18 +1084,18 @@ def employee_details(request, team_id):
 
         # Get date range
         current_date = timezone.now()
-        start_date_str = request.GET.get('start_date')
-        end_date_str = request.GET.get('end_date')
-        
+        start_date_str = request.GET.get("start_date")
+        end_date_str = request.GET.get("end_date")
+
         if start_date_str and end_date_str:
             try:
-                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
             except ValueError:
                 start_date = current_date.replace(day=1).date()
                 end_date = current_date.date()
         else:
-            month_offset = int(request.GET.get('month_offset', 0))
+            month_offset = int(request.GET.get("month_offset", 0))
             target_date = current_date - timedelta(days=month_offset * 30)
             start_date = target_date.replace(day=1).date()
             _, last_day = monthrange(target_date.year, target_date.month)
@@ -1502,9 +1104,8 @@ def employee_details(request, team_id):
         # Get holidays
         holidays = set(
             Holiday.objects.filter(
-                date__range=[start_date, end_date],
-                is_working_day=False
-            ).values_list('date', flat=True)
+                date__range=[start_date, end_date], is_working_day=False
+            ).values_list("date", flat=True)
         )
 
         # Calculate working days
@@ -1533,10 +1134,13 @@ def employee_details(request, team_id):
         half_days = 0
         full_days = present_count = 0
 
-        monthly_attendance = TimeRecord.objects.filter(
-            user=employee,
-            check_in__date__range=[start_date, end_date]
-        ).select_related('user').prefetch_related('breaks')
+        monthly_attendance = (
+            TimeRecord.objects.filter(
+                user=employee, check_in__date__range=[start_date, end_date]
+            )
+            .select_related("user")
+            .prefetch_related("breaks")
+        )
 
         for record in monthly_attendance:
             date = record.check_in.date()
@@ -1544,61 +1148,65 @@ def employee_details(request, team_id):
                 duration = timedelta()
                 if record.check_out:
                     duration = record.check_out - record.check_in
-                    
+
                     # Subtract break durations
                     breaks = record.breaks.filter(check_in__isnull=False)
                     break_duration = sum(
-                        (b.check_in - b.check_out).total_seconds() 
-                        for b in breaks
+                        (b.check_in - b.check_out).total_seconds() for b in breaks
                     )
                     duration = duration - timedelta(seconds=break_duration)
 
                     # Calculate attendance status
                     hours_worked = duration.total_seconds() / 3600
-                    status = 'Present'
-                    
+                    status = "Present"
+
                     if hours_worked < 3.5:
-                        status = 'Absent'
+                        status = "Absent"
                     elif hours_worked < 6:
-                        status = 'Half Day'
+                        status = "Half Day"
                         half_days += 1
                     else:
                         full_days += 1
                         present_count += 1
 
-                    if record.check_in.time() > datetime.strptime("10:15", "%H:%M").time():
+                    if (
+                        record.check_in.time()
+                        > datetime.strptime("10:15", "%H:%M").time()
+                    ):
                         late_days += 1
 
-                    attendance_records.append({
-                        'date': date,
-                        'day': date.strftime('%A'),
-                        'check_in': record.check_in.strftime('%I:%M %p'),
-                        'check_out': record.check_out.strftime('%I:%M %p'),
-                        'duration': f"{int(hours_worked):02d}:{int((hours_worked % 1) * 60):02d}",
-                        'status': status,
-                        'is_late': record.check_in.time() > datetime.strptime("10:15", "%H:%M").time()
-                    })
+                    attendance_records.append(
+                        {
+                            "date": date,
+                            "day": date.strftime("%A"),
+                            "check_in": record.check_in.strftime("%I:%M %p"),
+                            "check_out": record.check_out.strftime("%I:%M %p"),
+                            "duration": f"{int(hours_worked):02d}:{int((hours_worked % 1) * 60):02d}",
+                            "status": status,
+                            "is_late": record.check_in.time()
+                            > datetime.strptime("10:15", "%H:%M").time(),
+                        }
+                    )
                 else:
                     # Handle case where check_out is None (still checked in)
-                    attendance_records.append({
-                        'date': date,
-                        'day': date.strftime('%A'),
-                        'check_in': record.check_in.strftime('%I:%M %p'),
-                        'check_out': '-',
-                        'duration': 'In Progress',
-                        'status': 'Present',
-                        'is_late': record.check_in.time() > datetime.strptime("10:15", "%H:%M").time()
-                    })
+                    attendance_records.append(
+                        {
+                            "date": date,
+                            "day": date.strftime("%A"),
+                            "check_in": record.check_in.strftime("%I:%M %p"),
+                            "check_out": "-",
+                            "duration": "In Progress",
+                            "status": "Present",
+                            "is_late": record.check_in.time()
+                            > datetime.strptime("10:15", "%H:%M").time(),
+                        }
+                    )
                 present_dates.add(date)
 
         # Calculate absent dates (exclude future dates)
         today = timezone.now().date()
         absent_dates = [
-            {
-                'date': date,
-                'day': date.strftime('%A'),
-                'reason': 'No attendance record'
-            }
+            {"date": date, "day": date.strftime("%A"), "reason": "No attendance record"}
             for date in working_dates_set - present_dates
             if date <= today  # Only include dates up to today
         ]
@@ -1607,52 +1215,54 @@ def employee_details(request, team_id):
         total_working_days = len([date for date in working_dates if date <= today])
 
         # Calculate weekend dates
-        weekend_dates = {
-            'sundays': [],
-            'saturdays': []
-        }
-        
+        weekend_dates = {"sundays": [], "saturdays": []}
+
         current = start_date
         while current <= end_date:
             if current.weekday() == 6:  # Sunday
-                weekend_dates['sundays'].append(current)
+                weekend_dates["sundays"].append(current)
             elif current.weekday() == 5:  # Saturday
                 week_number = (current.day - 1) // 7 + 1
-                weekend_dates['saturdays'].append({
-                    'date': current,
-                    'is_working': week_number % 2 == 0  # Even week Saturdays are working
-                })
+                weekend_dates["saturdays"].append(
+                    {
+                        "date": current,
+                        "is_working": week_number % 2
+                        == 0,  # Even week Saturdays are working
+                    }
+                )
             current += timedelta(days=1)
 
         context = {
-            'employee': employee,
-            'team_details': {
-                'team_id': team.team_id,
-                'department': team.department
+            "employee": employee,
+            "team_details": {"team_id": team.team_id, "department": team.department},
+            "attendance_summary": {
+                "total_working_days": total_working_days,
+                "present_days": present_count,
+                "absent_days": len(absent_dates),
+                "half_days": half_days,
+                "late_days": late_days,
+                "attendance_percentage": (
+                    round((present_count / total_working_days * 100), 2)
+                    if total_working_days > 0
+                    else 0
+                ),
             },
-            'attendance_summary': {
-            'total_working_days': total_working_days,
-                'present_days': present_count,
-                'absent_days': len(absent_dates),
-            'half_days': half_days,
-                'late_days': late_days,
-                'attendance_percentage': round((present_count / total_working_days * 100), 2) if total_working_days > 0 else 0
+            "attendance_records": attendance_records,
+            "absent_dates": sorted(absent_dates, key=lambda x: x["date"]),
+            "date_range": {
+                "start": start_date,
+                "end": end_date,
+                "current_period": f"{start_date.strftime('%B %d, %Y')} - {end_date.strftime('%B %d, %Y')}",
             },
-            'attendance_records': attendance_records,
-            'absent_dates': sorted(absent_dates, key=lambda x: x['date']),
-            'date_range': {
-                'start': start_date,
-                'end': end_date,
-                'current_period': f"{start_date.strftime('%B %d, %Y')} - {end_date.strftime('%B %d, %Y')}"
-            },
-            'weekend_dates': weekend_dates
+            "weekend_dates": weekend_dates,
         }
-        
-        return render(request, 'admins/employee_details.html', context)
+
+        return render(request, "admins/employee_details.html", context)
 
     except Exception as e:
         messages.error(request, f"Error loading employee details: {str(e)}")
         return redirect("all_employees")
+
 
 @login_required
 def team_profile(request):
@@ -1660,64 +1270,59 @@ def team_profile(request):
     if request.user.role != "TEAM":
         messages.error(request, "Access denied. Team member privileges required.")
         return redirect("login")
-    
+
     try:
         # Get team profile
         team = get_object_or_404(Team, user=request.user)
-        
+
         # Get today's attendance record
         today = timezone.now().date()
         today_record = TimeRecord.objects.filter(
-            user=request.user, 
-            check_in__date=today
+            user=request.user, check_in__date=today
         ).first()
-        
+
         # Check if on break
         on_break = False
         current_break = None
         if today_record:
             current_break = PersonalBreak.objects.filter(
-                time_record=today_record,
-                check_out__isnull=False,
-                check_in__isnull=True
+                time_record=today_record, check_out__isnull=False, check_in__isnull=True
             ).first()
             on_break = current_break is not None
-        
+
         # Calculate today's working hours if checked in
         working_hours = None
         total_break_time = timedelta()
-        
+
         if today_record:
             end_time = today_record.check_out or timezone.now()
             total_duration = end_time - today_record.check_in
-            
+
             # Calculate total break time
             breaks = PersonalBreak.objects.filter(
-                time_record=today_record,
-                check_in__isnull=False
+                time_record=today_record, check_in__isnull=False
             )
-            
+
             for break_record in breaks:
                 break_duration = break_record.check_in - break_record.check_out
                 total_break_time += break_duration
-            
+
             # Get current break time if on break
             if current_break:
                 current_break_duration = timezone.now() - current_break.check_out
                 total_break_time += current_break_duration
-            
+
             # Calculate working hours
             working_duration = total_duration - total_break_time
             hours = working_duration.seconds // 3600
             minutes = (working_duration.seconds % 3600) // 60
             working_hours = f"{hours:02d}:{minutes:02d}"
-        
+
         # Get recent time records (last 3 days excluding today)
         recent_records = TimeRecord.objects.filter(
-            user=request.user,
-            check_in__date__lt=today
-        ).order_by('-check_in')[:3]
-        
+            user=request.user, check_in__date__lt=today
+        ).order_by("-check_in")[:3]
+
         # Format the time records for display
         time_records = []
         for record in recent_records:
@@ -1725,112 +1330,114 @@ def team_profile(request):
                 duration = record.check_out - record.check_in
                 hours = duration.seconds // 3600
                 minutes = (duration.seconds % 3600) // 60
-                
+
                 # Get breaks for this record
                 breaks = PersonalBreak.objects.filter(
-                    time_record=record,
-                    check_in__isnull=False
+                    time_record=record, check_in__isnull=False
                 )
                 total_break_mins = sum(
                     ((break_obj.check_in - break_obj.check_out).seconds // 60)
                     for break_obj in breaks
                 )
-                
-                time_records.append({
-                    'date': record.check_in.date(),
-                    'check_in': record.check_in.strftime('%I:%M %p'),
-                    'check_out': record.check_out.strftime('%I:%M %p'),
-                    'duration': f"{hours}h {minutes}m",
-                    'break_count': breaks.count(),
-                    'break_duration': f"{total_break_mins}m"
-                })
-        
+
+                time_records.append(
+                    {
+                        "date": record.check_in.date(),
+                        "check_in": record.check_in.strftime("%I:%M %p"),
+                        "check_out": record.check_out.strftime("%I:%M %p"),
+                        "duration": f"{hours}h {minutes}m",
+                        "break_count": breaks.count(),
+                        "break_duration": f"{total_break_mins}m",
+                    }
+                )
+
         # Get current tasks
-        tasks = Task.objects.filter(
-            assigned_to=team,
-            is_active=True
-        ).exclude(
-            status__name__in=["completed", "Completed"]
-        ).select_related(
-            'project', 'module', 'status'
-        ).order_by('created_on')[:4]  # Get 4 most recent tasks
-        
+        tasks = (
+            Task.objects.filter(assigned_to=team, is_active=True)
+            .exclude(status__name__in=["completed", "Completed"])
+            .select_related("project", "module", "status")
+            .order_by("created_on")[:4]
+        )  # Get 4 most recent tasks
+
         # Get work schedule
-        schedule = WorkSchedule.objects.filter(
-            employees=request.user
-        ).first() or WorkSchedule.objects.filter(
-            is_default=True
-        ).first()
-        
-        next_holiday = Holiday.objects.filter(
-            date__gte=timezone.now().date()
-        ).order_by('date').first()
-        
+        schedule = (
+            WorkSchedule.objects.filter(employees=request.user).first()
+            or WorkSchedule.objects.filter(is_default=True).first()
+        )
+
+        next_holiday = (
+            Holiday.objects.filter(date__gte=timezone.now().date())
+            .order_by("date")
+            .first()
+        )
+
         # Get weekly hours
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
         weekly_records = TimeRecord.objects.filter(
             user=request.user,
             check_in__date__range=[week_start, week_end],
-            check_out__isnull=False
+            check_out__isnull=False,
         )
-        
+
         total_weekly_hours = 0
         for record in weekly_records:
             duration = record.check_out - record.check_in
             # Subtract breaks
             record_breaks = PersonalBreak.objects.filter(
-                time_record=record,
-                check_in__isnull=False
+                time_record=record, check_in__isnull=False
             )
-            break_time = sum(
-                (b.check_in - b.check_out).seconds 
-                for b in record_breaks
-            )
+            break_time = sum((b.check_in - b.check_out).seconds for b in record_breaks)
             total_weekly_hours += (duration.seconds - break_time) / 3600
-        
+
         # Target hours (assuming 8 hours per day, 5 days a week)
         target_hours = 40
-        
+
         context = {
-            'team': team,
-            'today_record': today_record,
-            'on_break': on_break,
-            'working_hours': working_hours,
-            'time_records': time_records,
-            'tasks': tasks,
-            'schedule': schedule,
-            'next_holiday': next_holiday,
-            'weekly_hours': {
-                'logged': round(total_weekly_hours, 1),
-                'target': target_hours,
-                'percentage': min(round((total_weekly_hours / target_hours) * 100), 100) if target_hours > 0 else 0
-            }
+            "team": team,
+            "today_record": today_record,
+            "on_break": on_break,
+            "working_hours": working_hours,
+            "time_records": time_records,
+            "tasks": tasks,
+            "schedule": schedule,
+            "next_holiday": next_holiday,
+            "weekly_hours": {
+                "logged": round(total_weekly_hours, 1),
+                "target": target_hours,
+                "percentage": (
+                    min(round((total_weekly_hours / target_hours) * 100), 100)
+                    if target_hours > 0
+                    else 0
+                ),
+            },
         }
-        
-        return render(request, 'team/team_profile.html', context)
-    
+
+        return render(request, "team/team_profile.html", context)
+
     except Exception as e:
         messages.error(request, f"Error loading profile: {str(e)}")
         return redirect("team_dashboard")
 
+
 @login_required
 def update_profile(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         team_member = request.user.team_member
-        
+
         # Handle profile image upload
-        if 'profile_image' in request.FILES:
-            team_member.profile_image = request.FILES['profile_image']
-        
+        if "profile_image" in request.FILES:
+            team_member.profile_image = request.FILES["profile_image"]
+
         # Update phone number
-        if 'phone' in request.POST:
-            team_member.phone = request.POST['phone']
-        
+        if "phone" in request.POST:
+            team_member.phone = request.POST["phone"]
+
         team_member.save()
-        messages.success(request, 'Profile updated successfully!')
-        
-    return redirect('team_profile')
+        messages.success(request, "Profile updated successfully!")
+
+    return redirect("team_profile")
+
 
 @login_required
 def team_tickets(request):
@@ -1838,34 +1445,34 @@ def team_tickets(request):
     if request.user.role != "TEAM":
         messages.error(request, "Access denied. Team member privileges required.")
         return redirect("login")
-    
+
     try:
         team = get_object_or_404(Team, user=request.user)
-        
+
         # Get all tickets created by this team member
         tickets = Ticket.objects.filter(created_by=team).select_related(
-            'category', 'priority', 'assigned_to'
+            "category", "priority", "assigned_to"
         )
-        
+
         # Filter tickets by status if provided
-        status_filter = request.GET.get('status')
+        status_filter = request.GET.get("status")
         if status_filter:
             tickets = tickets.filter(status=status_filter)
-            
+
         # Get ticket categories and priorities for the filter options
         categories = TicketCategory.objects.filter(is_active=True)
         priorities = TicketPriority.objects.all()
-        
+
         context = {
-            'tickets': tickets,
-            'categories': categories,
-            'priorities': priorities,
-            'status_choices': Ticket.TICKET_STATUS_CHOICES,
-            'current_filter': status_filter,
+            "tickets": tickets,
+            "categories": categories,
+            "priorities": priorities,
+            "status_choices": Ticket.TICKET_STATUS_CHOICES,
+            "current_filter": status_filter,
         }
-        
-        return render(request, 'team/tickets.html', context)
-    
+
+        return render(request, "team/tickets.html", context)
+
     except Exception as e:
         messages.error(request, f"Error loading tickets: {str(e)}")
         return redirect("team_dashboard")
@@ -1877,20 +1484,20 @@ def create_ticket(request):
     if request.user.role != "TEAM":
         messages.error(request, "Access denied. Team member privileges required.")
         return redirect("login")
-    
+
     try:
         team = get_object_or_404(Team, user=request.user)
-        
-        if request.method == 'POST':
-            subject = request.POST.get('subject')
-            description = request.POST.get('description')
-            category_id = request.POST.get('category')
-            priority_id = request.POST.get('priority')
-            
+
+        if request.method == "POST":
+            subject = request.POST.get("subject")
+            description = request.POST.get("description")
+            category_id = request.POST.get("category")
+            priority_id = request.POST.get("priority")
+
             if not all([subject, description, category_id, priority_id]):
                 messages.error(request, "All fields are required.")
-                return redirect('create_ticket')
-            
+                return redirect("create_ticket")
+
             # Create the ticket
             ticket = Ticket.objects.create(
                 created_by=team,
@@ -1898,34 +1505,36 @@ def create_ticket(request):
                 priority_id=priority_id,
                 subject=subject,
                 description=description,
-                status='NEW'
+                status="NEW",
             )
-            
+
             # Handle file attachments
-            for file in request.FILES.getlist('attachments'):
+            for file in request.FILES.getlist("attachments"):
                 TicketAttachment.objects.create(
                     ticket=ticket,
                     uploaded_by=request.user,
                     file=file,
                     filename=file.name,
                     file_size=file.size,
-                    content_type=file.content_type
+                    content_type=file.content_type,
                 )
-            
-            messages.success(request, f"Ticket {ticket.ticket_id} has been created successfully.")
-            return redirect('ticket_detail', ticket_id=ticket.id)
-            
+
+            messages.success(
+                request, f"Ticket {ticket.ticket_id} has been created successfully."
+            )
+            return redirect("ticket_detail", ticket_id=ticket.id)
+
         # GET request - show the form
         categories = TicketCategory.objects.filter(is_active=True)
-        priorities = TicketPriority.objects.all().order_by('order')
-        
+        priorities = TicketPriority.objects.all().order_by("order")
+
         context = {
-            'categories': categories,
-            'priorities': priorities,
+            "categories": categories,
+            "priorities": priorities,
         }
-        
-        return render(request, 'team/create_ticket.html', context)
-    
+
+        return render(request, "team/create_ticket.html", context)
+
     except Exception as e:
         messages.error(request, f"Error creating ticket: {str(e)}")
         return redirect("team_tickets")
@@ -1939,83 +1548,88 @@ def ticket_detail(request, ticket_id):
         if request.user.role == "TEAM":
             team = get_object_or_404(Team, user=request.user)
             ticket = get_object_or_404(
-                Ticket.objects.select_related('category', 'priority', 'assigned_to'),
-                id=ticket_id, 
-                created_by=team
+                Ticket.objects.select_related("category", "priority", "assigned_to"),
+                id=ticket_id,
+                created_by=team,
             )
         elif request.user.role == "MANAGEMENT":
             management = get_object_or_404(Management, user=request.user)
             ticket = get_object_or_404(
-                Ticket.objects.select_related('category', 'priority', 'created_by'),
-                id=ticket_id
+                Ticket.objects.select_related("category", "priority", "created_by"),
+                id=ticket_id,
             )
         else:
             messages.error(request, "Access denied.")
             return redirect("login")
-        
+
         # Get comments - for management, show all comments. For team, hide private comments
         if request.user.role == "MANAGEMENT":
-            comments = ticket.comments.select_related('user').all()
+            comments = ticket.comments.select_related("user").all()
         else:
-            comments = ticket.comments.select_related('user').filter(is_private=False)
-            
+            comments = ticket.comments.select_related("user").filter(is_private=False)
+
         # Get attachments
-        attachments = ticket.attachments.select_related('uploaded_by').all()
-        
+        attachments = ticket.attachments.select_related("uploaded_by").all()
+
         # Add comment if POST request
-        if request.method == 'POST':
-            comment_text = request.POST.get('comment')
-            is_private = request.POST.get('is_private', '') == 'on'
-            
+        if request.method == "POST":
+            comment_text = request.POST.get("comment")
+            is_private = request.POST.get("is_private", "") == "on"
+
             if comment_text:
                 TicketComment.objects.create(
                     ticket=ticket,
                     user=request.user,
                     comment=comment_text,
-                    is_private=is_private
+                    is_private=is_private,
                 )
-                
+
                 messages.success(request, "Comment added successfully.")
-                return redirect('ticket_detail', ticket_id=ticket.id)
-        
+                return redirect("ticket_detail", ticket_id=ticket.id)
+
         # For management, include the ability to update status
-        if request.user.role == "MANAGEMENT" and request.method == 'POST':
-            new_status = request.POST.get('status')
+        if request.user.role == "MANAGEMENT" and request.method == "POST":
+            new_status = request.POST.get("status")
             old_status = ticket.status
-            
+
             ticket.status = new_status
-            
+
             # If resolved or closed, add resolution timestamp
-            if new_status in ['RESOLVED', 'CLOSED'] and old_status not in ['RESOLVED', 'CLOSED']:
+            if new_status in ["RESOLVED", "CLOSED"] and old_status not in [
+                "RESOLVED",
+                "CLOSED",
+            ]:
                 ticket.resolved_at = timezone.now()
-                
+
                 # Add resolution notes if provided
-                resolution_notes = request.POST.get('resolution_notes', '')
+                resolution_notes = request.POST.get("resolution_notes", "")
                 if resolution_notes:
                     ticket.resolution_notes = resolution_notes
-            
+
             ticket.save()
-            
+
             # Add a system comment about the status change
             TicketComment.objects.create(
                 ticket=ticket,
                 user=request.user,
                 comment=f"Status changed from {get_status_display(old_status)} to {get_status_display(new_status)}",
-                is_private=True
+                is_private=True,
             )
-            
-            messages.success(request, f"Ticket status updated to {get_status_display(new_status)}")
-        
+
+            messages.success(
+                request, f"Ticket status updated to {get_status_display(new_status)}"
+            )
+
         context = {
-            'ticket': ticket,
-            'comments': comments,
-            'attachments': attachments,
-            'status_choices': Ticket.TICKET_STATUS_CHOICES,
-            'is_management': request.user.role == "MANAGEMENT"
+            "ticket": ticket,
+            "comments": comments,
+            "attachments": attachments,
+            "status_choices": Ticket.TICKET_STATUS_CHOICES,
+            "is_management": request.user.role == "MANAGEMENT",
         }
-        
-        return render(request, 'team/ticket_detail.html', context)
-    
+
+        return render(request, "team/ticket_detail.html", context)
+
     except Exception as e:
         messages.error(request, f"Error viewing ticket: {str(e)}")
         if request.user.role == "TEAM":
@@ -2025,422 +1639,106 @@ def ticket_detail(request, ticket_id):
 
 
 @login_required
-def management_tickets(request):
-    """
-    View for management to see and manage all tickets in the system
-    """
-    try:
-        # Get management profile
-        management = Management.objects.get(user=request.user)
-        
-        # Get filter parameters
-        status_filter = request.GET.get('status', '')
-        priority_filter = request.GET.get('priority', '')
-        category_filter = request.GET.get('category', '')
-        assigned_filter = request.GET.get('assigned', '')
-        
-        # Base queryset
-        tickets = Ticket.objects.all().order_by('-created_at')
-        
-        # Apply filters
-        if status_filter:
-            tickets = tickets.filter(status=status_filter)
-        
-        if priority_filter:
-            tickets = tickets.filter(priority_id=priority_filter)
-            
-        if category_filter:
-            tickets = tickets.filter(category_id=category_filter)
-        
-        if assigned_filter:
-            if assigned_filter == 'me':
-                tickets = tickets.filter(assigned_to=management)
-            elif assigned_filter == 'unassigned':
-                tickets = tickets.filter(assigned_to__isnull=True)
-        
-        # Get all available filters for dropdowns
-        status_choices = Ticket.TICKET_STATUS_CHOICES
-        priorities = TicketPriority.objects.all().order_by('order')
-        categories = TicketCategory.objects.filter(is_active=True)
-        
-        # Get ticket stats
-        stats = {
-            'total': Ticket.objects.count(),
-            'new': Ticket.objects.filter(status='NEW').count(),
-            'in_progress': Ticket.objects.filter(status='IN_PROGRESS').count(),
-            'on_hold': Ticket.objects.filter(status='ON_HOLD').count(),
-            'resolved': Ticket.objects.filter(status='RESOLVED').count(),
-            'closed': Ticket.objects.filter(status='CLOSED').count(),
-            'assigned_to_me': Ticket.objects.filter(assigned_to=management).count(),
-            'unassigned': Ticket.objects.filter(assigned_to__isnull=True).count(),
-        }
-        
-        # Pagination
-        paginator = Paginator(tickets, 15)  # Show 15 tickets per page
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        
-        context = {
-            'tickets': page_obj,
-            'status_choices': status_choices,
-            'priorities': priorities,
-            'categories': categories,
-            'current_filters': {
-                'status': status_filter,
-                'priority': priority_filter,
-                'category': category_filter,
-                'assigned': assigned_filter,
-            },
-            'stats': stats,
-            'management': management,
-        }
-        
-        return render(request, 'management/tickets_dashboard.html', context)
-        
-    except Management.DoesNotExist:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('team_dashboard')
-    except Exception as e:
-        messages.error(request, f"An error occurred: {str(e)}")
-        return redirect('management_dashboard')
-
-
-@login_required
-def management_ticket_detail(request, ticket_id):
-    """
-    View for management to see and manage a specific ticket
-    """
-    try:
-        # Get management profile
-        management = Management.objects.get(user=request.user)
-        
-        # Get ticket with related objects
-        ticket = get_object_or_404(Ticket, id=ticket_id)
-        comments = TicketComment.objects.filter(ticket=ticket).order_by('created_at')
-        attachments = TicketAttachment.objects.filter(ticket=ticket)
-        
-        # Get all managers for assignment dropdown
-        managers = Management.objects.all()
-        
-        # Process form submissions
-        if request.method == 'POST':
-            action = request.POST.get('action', '')
-            
-            # Handle status update
-            if action == 'update_status':
-                new_status = request.POST.get('status')
-                old_status = ticket.status
-                
-                ticket.status = new_status
-                
-                # If resolved or closed, add resolution timestamp
-                if new_status in ['RESOLVED', 'CLOSED'] and old_status not in ['RESOLVED', 'CLOSED']:
-                    ticket.resolved_at = timezone.now()
-                    
-                    # Add resolution notes if provided
-                    resolution_notes = request.POST.get('resolution_notes', '')
-                    if resolution_notes:
-                        ticket.resolution_notes = resolution_notes
-                
-                ticket.save()
-                
-                # Add a system comment about the status change
-                TicketComment.objects.create(
-                    ticket=ticket,
-                    user=request.user,
-                    comment=f"Status changed from {get_status_display(old_status)} to {get_status_display(new_status)}",
-                    is_private=True
-                )
-                
-                messages.success(request, f"Ticket status updated to {get_status_display(new_status)}")
-            
-            # Handle assignment update
-            elif action == 'update_assignment':
-                assigned_to_id = request.POST.get('assigned_to', '')
-                old_assignee = ticket.assigned_to
-                
-                if assigned_to_id:
-                    new_assignee = get_object_or_404(Management, id=assigned_to_id)
-                    ticket.assigned_to = new_assignee
-                    
-                    if not old_assignee:
-                        ticket.status = 'ASSIGNED'
-                else:
-                    ticket.assigned_to = None
-                
-                ticket.save()
-                
-                # Add a system comment about the assignment change
-                if old_assignee != ticket.assigned_to:
-                    old_name = old_assignee.user.name if old_assignee else "Unassigned"
-                    new_name = ticket.assigned_to.user.name if ticket.assigned_to else "Unassigned"
-                    
-                    TicketComment.objects.create(
-                        ticket=ticket,
-                        user=request.user,
-                        comment=f"Ticket assignment changed from {old_name} to {new_name}",
-                        is_private=True
-                    )
-                
-                messages.success(request, "Ticket assignment updated")
-            
-            # Handle adding a comment
-            elif action == 'add_comment':
-                comment_text = request.POST.get('comment', '').strip()
-                is_private = request.POST.get('is_private', '') == 'on'
-                
-                if comment_text:
-                    TicketComment.objects.create(
-                        ticket=ticket,
-                        user=request.user,
-                        comment=comment_text,
-                        is_private=is_private
-                    )
-                    messages.success(request, "Comment added successfully")
-                else:
-                    messages.error(request, "Comment cannot be empty")
-                    
-                # Refresh the ticket and related objects
-                ticket = get_object_or_404(Ticket, id=ticket_id)
-                comments = TicketComment.objects.filter(ticket=ticket).order_by('created_at')
-            
-            return redirect('management_ticket_detail', ticket_id=ticket.id)
-        
-        context = {
-            'ticket': ticket,
-            'comments': comments,
-            'attachments': attachments,
-            'managers': managers,
-            'status_choices': Ticket.TICKET_STATUS_CHOICES,
-            'is_management': True,
-            'management': management,
-        }
-        
-        return render(request, 'management/ticket_detail.html', context)
-        
-    except Management.DoesNotExist:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('team_dashboard')
-    except Exception as e:
-        messages.error(request, f"An error occurred: {str(e)}")
-        return redirect('management_tickets')
-
-
-def get_status_display(status_code):
-    """Helper function to get status display name"""
-    for code, name in Ticket.TICKET_STATUS_CHOICES:
-        if code == status_code:
-            return name
-    return status_code
-
-
-@login_required
 def team_submit_request(request):
     # Get pending checkout if any
     pending_checkout = None
-    
-    if request.user.role == 'TEAM':
+
+    if request.user.role == "TEAM":
         # Check for incomplete checkout
         try:
             pending_checkout = TimeRecord.objects.filter(
-            user=request.user,
-            check_out__isnull=True
-                ).latest('check_in')
+                user=request.user, check_out__isnull=True
+            ).latest("check_in")
         except TimeRecord.DoesNotExist:
             pending_checkout = None
-    
-    if request.method == 'POST':
+
+    if request.method == "POST":
         # Extract form data
-        date = request.POST.get('date')
-        check_in = 'check_in' in request.POST
-        check_in_time = request.POST.get('check_in_time') if check_in else None
-        check_out = 'check_out' in request.POST
-        check_out_time = request.POST.get('check_out_time') if check_out else None
-        explanation = request.POST.get('explanation')
-        
+        date = request.POST.get("date")
+        check_in = "check_in" in request.POST
+        check_in_time = request.POST.get("check_in_time") if check_in else None
+        check_out = "check_out" in request.POST
+        check_out_time = request.POST.get("check_out_time") if check_out else None
+        explanation = request.POST.get("explanation")
+
         # Validate input
         if not (check_in or check_out):
-            messages.error(request, "You must select at least one: Check-in or Check-out")
-            return render(request, 'employees/submit_request.html', {
-                'pending_checkout': pending_checkout,
-                'today': timezone.now(),
-            })
-            
+            messages.error(
+                request, "You must select at least one: Check-in or Check-out"
+            )
+            return render(
+                request,
+                "employees/submit_request.html",
+                {
+                    "pending_checkout": pending_checkout,
+                    "today": timezone.now(),
+                },
+            )
+
         if (check_in and not check_in_time) or (check_out and not check_out_time):
             messages.error(request, "Please provide time for all selected options")
-            return render(request, 'employees/submit_request.html', {
-                'pending_checkout': pending_checkout,
-                'today': timezone.now(),
-            })
-        
+            return render(
+                request,
+                "employees/submit_request.html",
+                {
+                    "pending_checkout": pending_checkout,
+                    "today": timezone.now(),
+                },
+            )
+
         # Create request
         team_request = TeamRequest(
             user=request.user,
-        date=date,
-        check_in=check_in,
-        check_in_time=check_in_time,
-        check_out=check_out,
-        check_out_time=check_out_time,
-            explanation=explanation
+            date=date,
+            check_in=check_in,
+            check_in_time=check_in_time,
+            check_out=check_out,
+            check_out_time=check_out_time,
+            explanation=explanation,
         )
         team_request.save()
-        
+
         # Notify management
-        managers = User.objects.filter(role='MANAGEMENT')
+        managers = User.objects.filter(role="MANAGEMENT")
         for manager in managers:
             Notification.objects.create(
                 recipient=manager,
-                type='SYSTEM',
-                title='New Team Request',
+                type="SYSTEM",
+                title="New Team Request",
                 message=f"{request.user.name} has submitted a new request for {date}",
             )
-        
+
         messages.success(request, "Your request has been submitted successfully")
-        return redirect('team_view_requests')
-    
+        return redirect("team_view_requests")
+
     # GET request
-    return render(request, 'employees/submit_request.html', {
-        'pending_checkout': pending_checkout,
-        'today': timezone.now(),
-    })
+    return render(
+        request,
+        "employees/submit_request.html",
+        {
+            "pending_checkout": pending_checkout,
+            "today": timezone.now(),
+        },
+    )
 
 
 @login_required
 def team_view_requests(request):
     """View for team members to see their submitted requests"""
     # Ensure user is a team member
-    if request.user.role != 'TEAM':
+    if request.user.role != "TEAM":
         messages.error(request, "You don't have permission to access this page")
-        return redirect('management_dashboard')
-        
+        return redirect("management_dashboard")
+
     # Get all requests for this user
-    user_requests = TeamRequest.objects.filter(user=request.user).order_by('-created_at')
-    
-    return render(request, 'employees/team_view_requests.html', {
-        'user_requests': user_requests,
-    })
+    user_requests = TeamRequest.objects.filter(user=request.user).order_by(
+        "-created_at"
+    )
 
-
-@login_required
-def management_all_requests(request):
-    """View for management to see all team requests"""
-    # Ensure user is management or admin
-    if request.user.role not in ['MANAGEMENT', 'ADMIN']:
-        messages.error(request, "You don't have permission to access this page")
-        return redirect('team_dashboard')
-    
-    # Get all requests
-    all_requests = TeamRequest.objects.all().order_by('-created_at')
-    
-    return render(request, 'employees/management_all_requests.html', {
-        'all_requests': all_requests,
-    })
-
-@login_required
-def management_process_request(request, request_id):
-    """View for management to process (approve/reject) a team request"""
-    # Ensure user is management or admin
-    if request.user.role not in ['MANAGEMENT', 'ADMIN']:
-        messages.error(request, "You don't have permission to access this page")
-        return redirect('team_dashboard')
-    
-    try:
-        team_request = TeamRequest.objects.get(pk=request_id)
-    except TeamRequest.DoesNotExist:
-        messages.error(request, "Request not found")
-        return redirect('management_all_requests')
-    
-    if request.method == 'POST':
-        status = request.POST.get('status')
-        review_notes = request.POST.get('review_notes')
-        
-        if status not in ['APPROVED', 'REJECTED']:
-            messages.error(request, "Invalid status")
-            return redirect('management_process_request', request_id=request_id)
-        
-        # Update request
-        team_request.status = status
-        team_request.review_notes = review_notes
-        team_request.reviewed_by = request.user
-        team_request.reviewed_at = timezone.now()
-        team_request.save()
-        
-        # If approved and it's a check-in/out request, create or update TimeRecord
-        if status == 'APPROVED':
-            user = team_request.user
-            date = team_request.date
-            
-            # Get or create TimeRecord for the date
-            time_record = None
-            
-            # For check-in
-            if team_request.check_in and team_request.check_in_time:
-                # Combine date and time to create datetime
-                check_in_datetime = timezone.make_aware(
-                    datetime.combine(date, team_request.check_in_time)
-                )
-                
-                # Try to find existing record for that day
-                try:
-                    time_record = TimeRecord.objects.get(
-                        user=user,
-                        check_in__date=date
-                    )
-                    # Update existing check-in
-                    time_record.check_in = check_in_datetime
-                except TimeRecord.DoesNotExist:
-                    # Create new record
-                    time_record = TimeRecord(
-                        user=user,
-                        check_in=check_in_datetime
-                    )
-                
-                time_record.save()
-            
-            # For check-out
-            if team_request.check_out and team_request.check_out_time:
-                # If we haven't loaded the record yet and there's a check-out
-                if not time_record:
-                    try:
-                        time_record = TimeRecord.objects.get(
-                            user=user,
-                            check_in__date=date
-                        )
-                    except TimeRecord.DoesNotExist:
-                        # This is unusual - check-out without check-in
-                        messages.warning(request, 
-                            f"Approved check-out for {user.name} on {date}, but no check-in record exists."
-                        )
-                        # We'll create a new record with check-in at midnight
-                        check_in_midnight = timezone.make_aware(
-                            datetime.combine(date, time(0, 0))
-                        )
-                        time_record = TimeRecord(
-                            user=user,
-                            check_in=check_in_midnight
-                        )
-                
-                if time_record:
-                    # Combine date and time for check-out
-                    check_out_datetime = timezone.make_aware(
-                        datetime.combine(date, team_request.check_out_time)
-                    )
-                    time_record.check_out = check_out_datetime
-                    time_record.save()
-        
-        # Notify the team member
-        Notification.objects.create(
-            recipient=team_request.user,
-            type='SYSTEM',
-            title=f'Request {status.lower()}',
-            message=f'Your request for {team_request.date} has been {status.lower()}' +
-                    (f": {review_notes}" if review_notes else ""),
-        )
-        
-        messages.success(request, f"Request has been {status.lower()}")
-        return redirect('management_all_requests')
-        
-    return render(request, 'employees/process_request.html', {
-        'team_request': team_request,
-    })
-    
+    return render(
+        request,
+        "employees/team_view_requests.html",
+        {
+            "user_requests": user_requests,
+        },
+    )

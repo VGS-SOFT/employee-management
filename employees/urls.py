@@ -5,6 +5,7 @@ from .view import authentication_view, management_view
 
 urlpatterns = [
     path("", views.go_to_login, name="go_to_login"),
+    # Authentication URL's
     path(
         "auth/",
         include(
@@ -14,52 +15,81 @@ urlpatterns = [
             ]
         ),
     ),
-    
     # Management URLs.
     path(
         "management/",
         include(
             [
                 path("", management_view.dashboard, name="management_dashboard"),
-                path("all-employees", views.all_employees, name="all_employees"),
+                # Employee details.
+                path(
+                    "all-employees", management_view.all_employees, name="all_employees"
+                ),
                 path(
                     "present-employees",
-                    views.present_employees,
+                    management_view.present_employees,
                     name="present_employees",
                 ),
-                path('employee/details/<str:team_id>/', views.employee_details, name='employee_details'),
-                # Projects
-                path("all-projects", views.all_projects, name="all_projects"),
-                path("add-projects", views.add_projects, name="add_projects"),
-                path("delete-projects/<int:id>", views.delete_project, name="delete_project"),
+                path(
+                    "employee/details/<str:team_id>/",
+                    management_view.employee_details,
+                    name="employee_details",
+                ),
+                # Project Details.
+                path("all-projects", management_view.all_projects, name="all_projects"),
+                path("add-project", management_view.add_project, name="add_project"),
+                path(
+                    "delete-projects/<int:id>",
+                    management_view.delete_project,
+                    name="delete_project",
+                ),
                 # Modules
-                path("all-modules", views.all_modules, name="all_modules"),
-                path("delete-modules/<int:id>", views.delete_module, name="delete_module"),
-                path("add-modules", views.add_modules, name="add_modules"),
+                path("all-modules", management_view.all_modules, name="all_modules"),
+                path(
+                    "delete-modules/<int:id>",
+                    management_view.delete_module,
+                    name="delete_module",
+                ),
+                path("add-modules", management_view.add_module, name="add_module"),
                 # Tasks
-                path("all-tasks", views.all_tasks, name="all_tasks"),
-                path("delete-task/<int:id>", views.delete_task, name="delete_task"),
-                path("add-tasks", views.add_tasks, name="add_tasks"),
-                path('task/<int:task_id>/details/', views.task_details, name='task_details'),
-                path('task/<int:task_id>/edit/', views.edit_task, name='edit_task'),
-                path('team-task/<int:task_id>/details/', 
-                     views.admin_task_details, 
-                     name='admin_task_details'),
-                path('all-tasks-overview/', 
-                     views.management_view_all_tasks, 
-                     name='management_view_all_tasks'),
-                path('all-worklogs/', 
-                     views.management_view_all_worklogs, 
-                     name='management_view_all_worklogs'),
-                path('add-team-task/', 
-                     views.add_team_task, 
-                     name='management_add_team_task'),
+                path(
+                    "team-task/<int:task_id>/details/",
+                    management_view.admin_task_details,
+                    name="admin_task_details",
+                ),
+                path(
+                    "all-tasks-overview/",
+                    management_view.management_view_all_tasks,
+                    name="management_view_all_tasks",
+                ),
+                # worklog
+                path(
+                    "all-worklogs/",
+                    management_view.management_view_all_worklogs,
+                    name="management_view_all_worklogs",
+                ),
                 # Ticket system
-                path('tickets/', views.management_tickets, name='management_tickets'),
-                path('tickets/<int:ticket_id>/', views.management_ticket_detail, name='management_ticket_detail'),
+                path(
+                    "tickets/",
+                    management_view.management_tickets,
+                    name="management_tickets",
+                ),
+                path(
+                    "tickets/<int:ticket_id>/",
+                    management_view.management_ticket_detail,
+                    name="management_ticket_detail",
+                ),
                 # path('tickets/<int:ticket_id>/assign/', views.assign_ticket, name='assign_ticket'),
-                path("all-requests", views.management_all_requests, name="management_all_requests"),
-                path("process-request/<int:request_id>", views.management_process_request, name="management_process_request"),
+                path(
+                    "all-requests",
+                    management_view.management_all_requests,
+                    name="management_all_requests",
+                ),
+                path(
+                    "process-request/<int:request_id>",
+                    management_view.management_process_request,
+                    name="management_process_request",
+                ),
             ]
         ),
     ),
@@ -76,44 +106,32 @@ urlpatterns = [
                 path("all-tasks/", views.team_all_tasks, name="team_all_tasks"),
                 path("tasks/", views.team_view_all_task, name="team_view_all_task"),
                 path("add-tasks/", views.team_view_add_task, name="team_view_add_task"),
-                path('task/<int:task_id>/update/', views.add_task_response, name='add_task_response'),
+                path(
+                    "task/<int:task_id>/update/",
+                    views.add_task_response,
+                    name="add_task_response",
+                ),
                 path("work-log/add/", views.add_work_log, name="add_work_log"),
                 path("work-log/view/", views.view_work_logs, name="view_work_logs"),
                 # Ticket system
                 path("tickets/", views.team_tickets, name="team_tickets"),
                 path("tickets/create/", views.create_ticket, name="create_ticket"),
-                path("tickets/<int:ticket_id>/", views.ticket_detail, name="ticket_detail"),
-                path("requests/submit/", views.team_submit_request, name="team_submit_request"),
-                path("requests/view/", views.team_view_requests, name="team_view_requests"),
+                path(
+                    "tickets/<int:ticket_id>/",
+                    views.ticket_detail,
+                    name="ticket_detail",
+                ),
+                path(
+                    "requests/submit/",
+                    views.team_submit_request,
+                    name="team_submit_request",
+                ),
+                path(
+                    "requests/view/",
+                    views.team_view_requests,
+                    name="team_view_requests",
+                ),
             ]
         ),
     ),
-    # Management URLs
-    # path("management/", views.management_dashboard, name="management_dashboard"),
-    # path("management/add-employee/", views.add_employee, name="add_employee"),
-    # path(
-    #     "management/time-records/",
-    #     views.manage_time_records,
-    #     name="manage_time_records",
-    # ),
-    # path(
-    #     "management/time-records/<int:record_id>/edit/",
-    #     views.edit_time_record,
-    #     name="edit_time_record",
-    # ),
-    # # Team Member URLs
-    # path("team/", views.team_dashboard, name="team_dashboard"),
-    # path("team/check-in/", views.check_in, name="check_in"),
-    # path("team/check-out/", views.check_out, name="check_out"),
-    # path("team/schedule/", views.view_schedule, name="view_schedule"),
-    
-    # Messaging URLs
-    # path('messages/', views.messages_inbox, name='messages_inbox'),
-    # path('messages/sent/', views.sent_messages, name='sent_messages'),
-    # path('messages/compose/', views.compose_message, name='compose_message'),
-    # path('messages/thread/<int:thread_id>/', views.view_thread, name='view_thread'),
-    
-    # Notification URLs
-    # path('notifications/', views.notifications_list, name='notifications'),
-    # path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
 ]

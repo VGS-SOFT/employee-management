@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Employee Details
+{% endblock %}
+
+{% block link %}
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css" />
+  <link rel="stylesheet" href="{% static 'assets/css/management/employee_details.css' %}">
+{% endblock %}
+
+
+{% block content %}
+  <div class="pagetitle">
+    <h1>Employee Attendance Details</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="{% url 'management_dashboard' %}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item active">Employee Details</li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h3 class="mb-0">Employee Attendance Details</h3>
+      <p class="mb-0">{{ date_range.current_period }}</p>
+    </div>
+
+    <!-- Employee Info -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="info-card p-4">
+          <h5 class="text-primary mb-4">Employee Information</h5>
+          <div class="employee-info">
+            <p>
+              <strong>Name:</strong> {{ employee.name }}
+            </p>
+            <p>
+              <strong>Email:</strong> {{ employee.email }}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="info-card p-4">
+          <h5 class="text-primary mb-4">Team Information</h5>
+          <div class="employee-info">
+            <p>
+              <strong>Team ID:</strong> {{ team_details.team_id }}
+            </p>
+            <p>
+              <strong>Department:</strong> {{ team_details.department }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="date-filter mb-4">
+      <form method="get" class="row g-3 align-items-center">
+        <div class="col-md-4">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-control" name="start_date" value="{{ date_range.start|date:'Y-m-d' }}" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">End Date</label>
+          <input type="date" class="form-control" name="end_date" value="{{ date_range.end|date:'Y-m-d' }}" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">&nbsp;</label>
+          <div class="d-grid gap-2 d-md-flex">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="?month_offset=0" class="btn btn-outline-primary">Current Month</a>
+            <a href="?month_offset=1" class="btn btn-outline-secondary">Previous Month</a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Attendance Summary -->
+    <div class="row mb-4">
+      <div class="col-xl-2 col-md-4 mb-4">
+        <div class="stat-card text-center">
+          <h6>Working Days</h6>
+          <h4>{{ attendance_summary.total_working_days }}</h4>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-4">
+        <div class="stat-card text-center">
+          <h6>Present Days</h6>
+          <h4 class="text-success">{{ attendance_summary.present_days }}</h4>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-4">
+        <div class="stat-card text-center">
+          <h6>Absent Days</h6>
+          <h4 class="text-danger">{{ attendance_summary.absent_days }}</h4>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-4">
+        <div class="stat-card text-center">
+          <h6>Half Days</h6>
+          <h4 class="text-warning">{{ attendance_summary.half_days }}</h4>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-4">
+        <div class="stat-card text-center">
+          <h6>Late Days</h6>
+          <h4 class="text-info">{{ attendance_summary.late_days }}</h4>
+        </div>
+      </div>
+      <div class="col-xl-2 col-md-4 mb-4">
+        <div class="stat-card text-center">
+          <h6>Attendance %</h6>
+          <h4 class="text-primary">{{ attendance_summary.attendance_percentage }}%</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add this new section after the attendance summary cards and before the attendance records table -->
+    <div class="table-card mb-4">
+      <h5>
+        <i class="bi bi-calendar-week me-2"></i>
+        Weekend Details
+      </h5>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-0">Sundays</h6>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Day</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for date in weekend_dates.sundays %}
+                      <tr>
+                        <td>{{ date|date:'M d, Y' }}</td>
+                        <td>Sunday</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-0">Saturdays</h6>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for saturday in weekend_dates.saturdays %}
+                      <tr class="{% if saturday.is_working %}
+                          table-success border-success
+                        {% else %}
+                          table-danger border-danger
+                        {% endif %}">
+                        <td>{{ saturday.date|date:'M d, Y' }}</td>
+                        <td>
+                          {% if saturday.is_working %}
+                            <span class="badge bg-success">Working</span>
+                          {% else %}
+                            <span class="badge bg-danger">Non-working</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update the attendance records table section -->
+    <div class="table-card">
+      <h5>
+        <i class="bi bi-calendar-check me-2"></i>
+        Attendance Records
+      </h5>
+      <table id="attendanceTable" class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Duration</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in attendance_records %}
+            <tr>
+              <td>{{ record.date|date:'M d, Y' }}</td>
+              <td>{{ record.day }}</td>
+              <td>
+                {{ record.check_in }}
+                {% if record.is_late %}
+                  <span class="badge bg-warning ms-2">Late</span>
+                {% endif %}
+              </td>
+              <td>{{ record.check_out }}</td>
+              <td>{{ record.duration }}</td>
+              <td>
+                <span class="badge {% if record.status == 'Present' %}
+                    bg-success
+                  {% elif record.status == 'Half Day' %}
+                    bg-warning
+                  {% else %}
+                    bg-danger
+                  {% endif %}">
+                  {{ record.status }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Absent Dates -->
+    <div class="table-card">
+      <h5>
+        <i class="fas fa-calendar-times me-2"></i>
+        Absent Dates
+      </h5>
+      <table id="absentTable" class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for absent in absent_dates %}
+            <tr>
+              <td>{{ absent.date|date:'M d, Y' }}</td>
+              <td>{{ absent.day }}</td>
+              <td>{{ absent.reason }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+  {{ block.super }}
+  <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+  <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.bootstrap5.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+  <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+
+  <script>
+    $(document).ready(function () {
+      $('#attendanceTable').DataTable({
+        dom: '<"row"<"col-md-6"l><"col-md-6"f>><"row"<"col-md-12"B>><"row"<"col-md-12"rt>><"row"<"col-md-6"i><"col-md-6"p>>',
+        buttons: [
+          {
+            extend: 'excel',
+            className: 'btn btn-primary me-2',
+            text: '<i class="bi bi-file-earmark-excel me-1"></i> Export to Excel'
+          },
+          {
+            extend: 'csv',
+            className: 'btn btn-primary',
+            text: '<i class="bi bi-file-earmark-csv me-1"></i> Export to CSV'
+          }
+        ],
+        order: [[0, 'desc']],
+        pageLength: 10,
+        lengthMenu: [
+          [10, 25, 50, -1],
+          [10, 25, 50, 'All']
+        ],
+        language: {
+          search: '_INPUT_',
+          searchPlaceholder: 'Search records...',
+          lengthMenu: 'Show _MENU_ entries',
+          info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+          paginate: {
+            first: '<i class="bi bi-chevron-double-left"></i>',
+            last: '<i class="bi bi-chevron-double-right"></i>',
+            next: '<i class="bi bi-chevron-right"></i>',
+            previous: '<i class="bi bi-chevron-left"></i>'
+          }
+        }
+      })
+    
+      $('#absentTable').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+          {
+            extend: 'excel',
+            className: 'btn btn-primary me-2',
+            text: '<i class="fas fa-file-excel me-1"></i> Export to Excel'
+          },
+          {
+            extend: 'csv',
+            className: 'btn btn-primary',
+            text: '<i class="fas fa-file-csv me-1"></i> Export to CSV'
+          }
+        ],
+        order: [[0, 'desc']],
+        pageLength: 31,
+        language: {
+          search: '_INPUT_',
+          searchPlaceholder: 'Search records...'
+        }
+      })
+    })
+  </script>
+{% endblock %}

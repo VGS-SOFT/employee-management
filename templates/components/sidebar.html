@@ -202,7 +202,7 @@
 
     <li class="nav-item">
       <a
-        class="nav-link {% if request.resolver_match.url_name == 'all_projects' or request.resolver_match.url_name == 'add_projects' %}active{% else %}collapsed{% endif %}"
+        class="nav-link {% if request.resolver_match.url_name == 'all_projects' or request.resolver_match.url_name == 'add_project' %}active{% else %}collapsed{% endif %}"
         data-bs-target="#projects-nav"
         data-bs-toggle="collapse"
         href="#"
@@ -213,7 +213,7 @@
       </a>
       <ul
         id="projects-nav"
-        class="nav-content collapse {% if request.resolver_match.url_name == 'all_projects' or request.resolver_match.url_name == 'add_projects' %}show{% endif %}"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'all_projects' or request.resolver_match.url_name == 'add_project' %}show{% endif %}"
         data-bs-parent="#sidebar-nav"
       >
         <li>
@@ -226,8 +226,8 @@
         </li>
         <li>
           <a
-            href="{% url 'add_projects' %}"
-            class="{% if request.resolver_match.url_name == 'add_projects' %}active{% endif %}"
+            href="{% url 'add_project' %}"
+            class="{% if request.resolver_match.url_name == 'add_project' %}active{% endif %}"
           >
             <i class="bi bi-circle"></i><span>Add Project</span>
           </a>
@@ -237,7 +237,7 @@
 
     <li class="nav-item">
       <a
-        class="nav-link {% if request.resolver_match.url_name == 'all_modules' or request.resolver_match.url_name == 'add_modules' %}active{% else %}collapsed{% endif %}"
+        class="nav-link {% if request.resolver_match.url_name == 'all_modules' or request.resolver_match.url_name == 'add_module' %}active{% else %}collapsed{% endif %}"
         data-bs-target="#modules-nav"
         data-bs-toggle="collapse"
         href="#"
@@ -248,7 +248,7 @@
       </a>
       <ul
         id="modules-nav"
-        class="nav-content collapse {% if request.resolver_match.url_name == 'all_modules' or request.resolver_match.url_name == 'add_modules' %}show{% endif %}"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'all_modules' or request.resolver_match.url_name == 'add_module' %}show{% endif %}"
         data-bs-parent="#sidebar-nav"
       >
         <li>
@@ -261,8 +261,8 @@
         </li>
         <li>
           <a
-            href="{% url 'add_modules' %}"
-            class="{% if request.resolver_match.url_name == 'add_modules' %}active{% endif %}"
+            href="{% url 'add_module' %}"
+            class="{% if request.resolver_match.url_name == 'add_module' %}active{% endif %}"
           >
             <i class="bi bi-circle"></i><span>Add Module</span>
           </a>
@@ -283,7 +283,7 @@
       </a>
       <ul
         id="tasks-nav"
-        class="nav-content collapse {% if request.resolver_match.url_name == 'all_tasks' or request.resolver_match.url_name == 'add_tasks' or request.resolver_match.url_name == 'management_view_all_tasks' %}show{% endif %}"
+        class="nav-content collapse {% if request.resolver_match.url_name == 'management_view_all_tasks' %}show{% endif %}"
         data-bs-parent="#sidebar-nav"
       >
         <li>

@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+  Present Employees
+{% endblock %}
+
+{% block link %}
+  <link rel="stylesheet" href="{% static 'assets/css/management/present_employees.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <h1 class="h3 mb-0">Present Employees</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item">
+          <a href="{% url 'management_dashboard' %}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item active">Present Employees</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="row stats-row">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="stat-card">
+        <h3>{{ data|length }}</h3>
+        <p>Present Today</p>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="stat-card">
+        <h3 id="onTimeCount">0</h3>
+        <p>On Time Arrivals</p>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="stat-card">
+        <h3 id="lateCount">0</h3>
+        <p>Late Arrivals</p>
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="stat-card">
+        <h3 id="avgHours">0</h3>
+        <p>Avg. Working Hours</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-card">
+    <div class="card-title">
+      <span>Today's Attendance</span>
+      <button class="btn btn-outline-primary" onclick="exportToExcel()"><i class="bi bi-download me-2"></i>Export</button>
+    </div>
+
+    <table id="employeesTable" class="table table-hover">
+      <thead>
+        <tr>
+          <th>Sr. No.</th>
+          <th>Employee ID</th>
+          <th>Email</th>
+          <th>Phone Number</th>
+          <th>Department</th>
+          <th>Check In</th>
+          <th>Check Out</th>
+          <th>Working Hours</th>
+          <th>Total Hours</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in data %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ record.user__team__team_id }}</td>
+            <td>{{ record.user__email }}</td>
+            <td>{{ record.user__phone|default:'Not provided' }}</td>
+            <td>
+              <span class="badge">{{ record.user__team__department }}</span>
+            </td>
+            <td>
+              <span class="time-badge">{{ record.check_in|time:'g:i A' }}</span>
+            </td>
+            <td>
+              <span class="time-badge">{{ record.check_out|time:'g:i A'|default:'-' }}</span>
+            </td>
+            <td>{{ record.working_duration }}</td>
+            <td>{{ record.total_duration }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      let table = $('#employeesTable').DataTable({
+        responsive: true,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' + '<"row"<"col-sm-12"tr>>' + '<"row align-items-center"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        language: {
+          search: '_INPUT_',
+          searchPlaceholder: 'Search records...',
+          lengthMenu: 'Show _MENU_ entries',
+          info: 'Showing _START_ to _END_ of _TOTAL_ records',
+          paginate: {
+            first: '<i class="bi bi-chevron-double-left"></i>',
+            last: '<i class="bi bi-chevron-double-right"></i>',
+            next: '<i class="bi bi-chevron-right"></i>',
+            previous: '<i class="bi bi-chevron-left"></i>'
+          }
+        },
+        pageLength: 10,
+        lengthMenu: [
+          [10, 25, 50, -1],
+          [10, 25, 50, 'All']
+        ],
+        order: [[0, 'asc']],
+        initComplete: function () {
+          // Calculate statistics
+          let onTime = 0
+          let late = 0
+          let totalHours = 0
+          let checkedOut = 0
+    
+          this.api()
+            .rows()
+            .every(function () {
+              let data = this.data()
+              let checkInTime = data[5].match(/\d{1,2}:\d{2}/)[0]
+              if (checkInTime < '09:15') onTime++
+              else late++
+    
+              let workingHours = data[7].split(':')[0]
+              if (workingHours !== '-') {
+                totalHours += parseInt(workingHours)
+                checkedOut++
+              }
+            })
+    
+          // Update stats
+          $('#onTimeCount').text(onTime)
+          $('#lateCount').text(late)
+          $('#avgHours').text((checkedOut > 0 ? (totalHours / checkedOut).toFixed(1) : 0) + 'h')
+        }
+      })
+    })
+    
+    // Export function
+    function exportToExcel() {
+      let table = document.getElementById('employeesTable')
+      let wb = XLSX.utils.table_to_book(table, { sheet: 'Present Employees' })
+      XLSX.writeFile(wb, `Present_Employees_${new Date().toISOString().split('T')[0]}.xlsx`)
+    }
+  </script>
+{% endblock %}

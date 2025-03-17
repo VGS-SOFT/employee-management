@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  Process Request
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card shadow">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Review Request</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-4">
+              <h6 class="text-uppercase text-muted">Request Details</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <p>
+                    <strong>Employee:</strong> {{ team_request.user.name }}
+                  </p>
+                  <p>
+                    <strong>Department:</strong>
+                    {% if team_request.user.role == 'TEAM' %}
+                      {{ team_request.user.team.department }}
+                    {% else %}
+                      {{ team_request.user.management.department }}
+                    {% endif %}
+                  </p>
+                </div>
+                <div class="col-md-6">
+                  <p>
+                    <strong>Date Requested:</strong> {{ team_request.date|date:'F d, Y' }}
+                  </p>
+                  <p>
+                    <strong>Submitted On:</strong> {{ team_request.created_at|date:'F d, Y g:i A' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 class="text-uppercase text-muted">Employee's Explanation</h6>
+              <div class="card bg-light">
+                <div class="card-body">
+                  <p class="mb-0">{{ team_request.explanation }}</p>
+                </div>
+              </div>
+            </div>
+
+            <form method="post" action="{% url 'management_process_request' team_request.id %}">
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label for="status" class="form-label">Decision *</label>
+                <select class="form-select" id="status" name="status" required>
+                  <option value="" disabled selected>Select your decision</option>
+                  <option value="APPROVED">Approve</option>
+                  <option value="REJECTED">Reject</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="review_notes" class="form-label">Review Notes</label>
+                <textarea class="form-control" id="review_notes" name="review_notes" rows="3" placeholder="Provide any additional notes or comments about your decision"></textarea>
+              </div>
+
+              <div class="d-flex justify-content-between">
+                <a href="{% url 'management_all_requests' %}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Back to List</a>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i> Submit Decision</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

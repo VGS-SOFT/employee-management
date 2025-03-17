@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block link %}
+  <link rel="stylesheet" href="{% static 'assets/css/management/add_project.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="page-container">
+    <div class="page-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">Add New Project</h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+              <a href="{% url 'all_projects' %}">Projects</a>
+            </li>
+            <li class="breadcrumb-item active">Add New</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="form-card">
+          <div class="card-body">
+            {% if messages %}
+              <div class="mb-4">
+                {% for message in messages %}
+                  <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'add_project' %}" enctype="multipart/form-data">
+              {% csrf_token %}
+
+              <div class="mb-4">
+                <label for="title" class="form-label">Project Title</label>
+                <input type="text" name="name" id="title" class="form-control" placeholder="Enter project title" required />
+              </div>
+
+              <div class="mb-4">
+                <label for="description" class="form-label">Description</label>
+                <textarea name="description" id="description" class="form-control" rows="4" placeholder="Enter project description"></textarea>
+              </div>
+
+              <div class="mb-4">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-select" required>
+                  <option value="">Select Status</option>
+                  {% for status in statuses %}
+                    <option value="{{ status.id }}">{{ status.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="text-end">
+                <button type="submit" class="btn btn-primary btn-submit"><i class="bi bi-plus-circle me-2"></i>Create Project</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

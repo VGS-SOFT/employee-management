@@ -1,114 +1,116 @@
 {% extends 'base.html' %}
-
-{% block title %}All Employees{% endblock %}
+{% load static %}
+{% block title %}
+  All Employees
+{% endblock %}
 
 {% block link %}
-<link
-      href="{% static 'assets/css/management/all_employees.css' %}"
-      rel="stylesheet"
-    />
+  <link href="{% static 'assets/css/management/all_employees.css' %}" rel="stylesheet" />
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
+  <div class="page-header">
     <h1 class="h3 mb-0">Employee Management</h1>
     <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{% url 'management_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item active">All Employees</li>
-        </ol>
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item">
+          <a href="{% url 'management_dashboard' %}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item active">All Employees</li>
+      </ol>
     </nav>
-</div>
+  </div>
 
-<!-- Stats Row -->
-<div class="row stats-row">
+  <!-- Stats Row -->
+  <div class="row stats-row">
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stat-card">
-            <h3>{{ data|length }}</h3>
-            <p>Total Employees</p>
-        </div>
+      <div class="stat-card">
+        <h3>{{ data|length }}</h3>
+        <p>Total Employees</p>
+      </div>
     </div>
-</div>
+  </div>
 
-<div class="main-card">
+  <div class="main-card">
     <div class="card-title">
-        <span>Employee Directory</span>
-        <!-- Removed Add Employee button since functionality doesn't exist -->
+      <span>Employee Directory</span>
+      <!-- Removed Add Employee button since functionality doesn't exist -->
     </div>
 
     {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
     {% endif %}
 
     <table id="employeesTable" class="table table-hover">
-        <thead>
-            <tr>
-                <th>Sr. No.</th>
-                <th>Employee ID</th>
-                <th>Email</th>
-                <th>Phone Number</th>
-                <th>Department</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for member in data %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ member.team_id }}</td>
-                <td>{{ member.user__email }}</td>
-                <td>{{ member.user__phone|default:"Not provided" }}</td>
-                <td>
-                    <span class="department-badge">{{ member.department }}</span>
-                </td>
-                <td>
-                    <a href="{% url 'employee_details' member.team_id %}" class="btn btn-view">
-                        <i class="bi bi-eye me-1"></i>
-                        View Details
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>Sr. No.</th>
+          <th>Employee ID</th>
+          <th>Email</th>
+          <th>Phone Number</th>
+          <th>Department</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in data %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ member.team_id }}</td>
+            <td>{{ member.user__email }}</td>
+            <td>{{ member.user__phone|default:'Not provided' }}</td>
+            <td>
+              <span class="department-badge">{{ member.department }}</span>
+            </td>
+            <td>
+              <a href="{% url 'employee_details' member.team_id %}" class="btn btn-view">
+                <i class="bi bi-eye me-1"></i>
+                View Details
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
     </table>
-</div>
+  </div>
 {% endblock %}
 
 {% block script %}
-<script>
-$(document).ready(function() {
-    $('#employeesTable').DataTable({
+  <script>
+    $(document).ready(function () {
+      $('#employeesTable').DataTable({
         responsive: true,
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-             '<"row"<"col-sm-12"tr>>' +
-             '<"row align-items-center"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' + '<"row"<"col-sm-12"tr>>' + '<"row align-items-center"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
         language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search employees...",
-            lengthMenu: "Show _MENU_ entries",
-            info: "Showing _START_ to _END_ of _TOTAL_ employees",
-            paginate: {
-                first: '<i class="bi bi-chevron-double-left"></i>',
-                last: '<i class="bi bi-chevron-double-right"></i>',
-                next: '<i class="bi bi-chevron-right"></i>',
-                previous: '<i class="bi bi-chevron-left"></i>'
-            }
+          search: '_INPUT_',
+          searchPlaceholder: 'Search employees...',
+          lengthMenu: 'Show _MENU_ entries',
+          info: 'Showing _START_ to _END_ of _TOTAL_ employees',
+          paginate: {
+            first: '<i class="bi bi-chevron-double-left"></i>',
+            last: '<i class="bi bi-chevron-double-right"></i>',
+            next: '<i class="bi bi-chevron-right"></i>',
+            previous: '<i class="bi bi-chevron-left"></i>'
+          }
         },
         pageLength: 10,
-        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        lengthMenu: [
+          [10, 25, 50, -1],
+          [10, 25, 50, 'All']
+        ],
         order: [[0, 'asc']],
         columnDefs: [
-            {
-                targets: -1,
-                orderable: false
-            }
+          {
+            targets: -1,
+            orderable: false
+          }
         ]
-    });
-});
-</script>
+      })
+    })
+  </script>
 {% endblock %}
