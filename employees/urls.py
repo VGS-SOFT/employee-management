@@ -91,7 +91,9 @@ urlpatterns = [
                     name="management_process_request",
                 ),
                 path(
-                    "calendar/", management_view.calendar_management, name="calendar_management"
+                    "calendar/",
+                    management_view.calendar_management,
+                    name="calendar_management",
                 ),
                 path(
                     "calendar/update/",
@@ -139,6 +141,16 @@ urlpatterns = [
                     views.team_view_requests,
                     name="team_view_requests",
                 ),
+                path(
+                    "get-modules-for-project/",
+                    views.get_modules_for_project,
+                    name="get_modules_for_projects",
+                ),
+                # path(
+                #     "get-modules-for-project/<int:project_id>/",
+                #     views.get_modules_for_project,
+                #     name="get_modules_for_projects",
+                # ),
             ]
         ),
     ),

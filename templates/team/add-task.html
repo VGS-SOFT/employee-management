@@ -1,4 +1,4 @@
-{% extends 'base.html' %} 
+{% extends 'base.html' %}
 {% block content %}
   <section class="section">
     <div class="row justify-content-center">
@@ -9,9 +9,12 @@
               <div class="mt-2">
                 {% for message in messages %}
                   <div class="alert {% if message.tags %}
+                      
                       alert-{{ message.tags }}
                     {% else %}
+                      
                       alert-info
+
                     {% endif %} alert-dismissible fade show"
                     role="alert">
                     {{ message }}
@@ -98,34 +101,67 @@
                 </div>
               </div>
             </form>
-
           </div>
         </div>
       </div>
     </div>
   </section>
-
-  {% block extra_js %}
+{% endblock %}
+{% comment %} {% block script %}
   <script>
-    document.getElementById('project').addEventListener('change', function() {
-      const projectId = this.value;
-      const moduleSelect = document.getElementById('module');
-      
+    document.getElementById('project').addEventListener('change', function () {
+      const projectId = this.value
+      const moduleSelect = document.getElementById('module')
+    
       // Clear current modules
-      moduleSelect.innerHTML = '<option value="">Select Module</option>';
-      
+      moduleSelect.innerHTML = '<option value="">Select Module</option>'
+    
       if (projectId) {
         // Fetch modules for selected project
         fetch(`/get-modules-for-project/?project_id=${projectId}`)
-          .then(response => response.json())
-          .then(data => {
-            data.modules.forEach(module => {
-              const option = new Option(module.name, module.id);
-              moduleSelect.add(option);
-            });
-          });
+          .then((response) => response.json())
+          .then((data) => {
+            data.modules.forEach((module) => {
+              const option = new Option(module.name, module.id)
+              moduleSelect.add(option)
+            })
+          })
       }
-    });
+    })
   </script>
-  {% endblock %}
+{% endblock %} {% endcomment %}
+
+{% block script %}
+  <script>
+    document.getElementById('project').addEventListener('change', function () {
+      const projectId = this.value
+      const moduleSelect = document.getElementById('module')
+    
+      // Clear current modules
+      moduleSelect.innerHTML = '<option value="">Select Module</option>'
+    
+      if (projectId) {
+        // Direct URL construction based on your URLs pattern
+        const url = `/team/get-modules-for-project/?project_id=${projectId}`;
+    
+        // Add console log for debugging
+        console.log('Fetching from:', url)
+    
+        fetch(url)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error ${response.status}`)
+            }
+            return response.json()
+          })
+          .then((data) => {
+            data.modules.forEach((module) => {
+              const option = new Option(module.name, module.id)
+              moduleSelect.add(option)
+            })
+          })
+          .catch((error) => console.error('Error fetching modules:', error))
+      }
+    })
+  </script>
 {% endblock %}

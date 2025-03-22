@@ -153,7 +153,7 @@
     </li>
 
     <!-- Add this right after the Team Requests link in the management section -->
-    <li class="nav-item">
+    {% comment %} <li class="nav-item">
       <a
         href="{% url 'calendar_management' %}"
         class="nav-link {% if request.resolver_match.url_name == 'calendar_management' %}active{% else %}collapsed{% endif %}"
@@ -161,7 +161,7 @@
         <i class="bi bi-calendar3"></i>
         <span>Calendar Management</span>
       </a>
-    </li>
+    </li> {% endcomment %}
 
   {% else %}
 
