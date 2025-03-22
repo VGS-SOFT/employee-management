@@ -1,0 +1,872 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+  Calendar Management
+{% endblock %}
+
+{% block link %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link rel="stylesheet" href="{% static 'assets/css/management/calendar_management.css' %}" />
+  <style>
+    :root {
+      --working-color: #28a745;
+      --holiday-color: #dc3545;
+      --festival-color: #ffc107;
+      --special-color: #17a2b8;
+      --half-day-color: #6c757d;
+    }
+    
+    .calendar-container {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+    
+    .filters-container {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .calendar-header {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .calendar-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .calendar-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .calendar-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .calendar-nav select {
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+      padding: 6px 12px;
+    }
+    
+    .calendar-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding: 10px 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+    
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    
+    .legend-color.working { background-color: var(--working-color); }
+    .legend-color.holiday { background-color: var(--holiday-color); }
+    .legend-color.festival { background-color: var(--festival-color); }
+    .legend-color.special_working { background-color: var(--special-color); }
+    .legend-color.half_day { background-color: var(--half-day-color); }
+    
+    .calendar-grid {
+      display: grid;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #4154f1;
+      color: white;
+      font-weight: 600;
+      padding: 12px 0;
+      text-align: center;
+    }
+    
+    .calendar-week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border-bottom: 1px solid #eee;
+    }
+    
+    .calendar-week:last-child {
+      border-bottom: none;
+    }
+    
+    .calendar-day {
+      min-height: 110px;
+      padding: 10px;
+      background: white;
+      border-right: 1px solid #eee;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    
+    .calendar-day:last-child {
+      border-right: none;
+    }
+    
+    .calendar-day:not(.empty):hover {
+      background: #f8f9fa;
+      cursor: pointer;
+    }
+    
+    .calendar-day.selected {
+      background: rgba(65, 84, 241, 0.1) !important;
+      box-shadow: inset 0 0 0 2px #4154f1;
+    }
+    
+    .calendar-day.empty {
+      background: #f9f9f9;
+    }
+    
+    .calendar-day.today {
+      box-shadow: inset 0 0 0 2px #4154f1;
+    }
+    
+    .day-number {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    
+    .day-type {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    
+    .day-description {
+      font-size: 0.75rem;
+      color: #6c757d;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 5px;
+    }
+    
+    /* Day type indicators */
+    .day-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 8px;
+      height: 100%;
+    }
+    
+    .day-indicator.working { background-color: var(--working-color); }
+    .day-indicator.holiday { background-color: var(--holiday-color); }
+    .day-indicator.festival { background-color: var(--festival-color); }
+    .day-indicator.special_working { background-color: var(--special-color); }
+    .day-indicator.half_day { background-color: var(--half-day-color); }
+    
+    .day-type.working { 
+      background-color: rgba(40, 167, 69, 0.1); 
+      color: var(--working-color);
+    }
+    .day-type.holiday { 
+      background-color: rgba(220, 53, 69, 0.1); 
+      color: var(--holiday-color);
+    }
+    .day-type.festival { 
+      background-color: rgba(255, 193, 7, 0.1); 
+      color: var(--festival-color);
+    }
+    .day-type.special_working { 
+      background-color: rgba(23, 162, 184, 0.1); 
+      color: var(--special-color);
+    }
+    .day-type.half_day { 
+      background-color: rgba(108, 117, 125, 0.1); 
+      color: var(--half-day-color);
+    }
+    
+    /* Action bar for bulk actions */
+    .action-bar {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 15px 25px;
+      z-index: 1000;
+      min-width: 500px;
+    }
+    
+    .action-bar.active {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .action-bar .counter {
+      margin-right: 15px;
+      font-weight: 600;
+      color: #4154f1;
+    }
+    
+    /* Date range picker styles */
+    .date-range-picker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .date-picker {
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      padding: 8px 12px;
+      width: 150px;
+    }
+    
+    .apply-btn {
+      background: #4154f1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 15px;
+      cursor: pointer;
+    }
+    
+    .apply-btn:hover {
+      background: #3040d0;
+    }
+    
+    .month-selector, .year-selector {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .go-button {
+      padding: 6px 15px;
+      background: #4154f1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    
+    .go-button:hover {
+      background: #3040d0;
+    }
+    
+    .bulk-actions-controls {
+      flex: 1;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <h1 class="h3 mb-0">Calendar Management</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item">
+          <a href="{% url 'management_dashboard' %}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item active">Calendar Management</li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="calendar-container">
+    <!-- Filters -->
+    <div class="filters-container">
+      <form action="{% url 'calendar_management' %}" method="get" id="calendarFiltersForm">
+        <div class="row align-items-center">
+          <!-- Month/Year Navigation -->
+          <div class="col-lg-6 mb-3 mb-lg-0">
+            <div class="d-flex align-items-center">
+              <select name="month" class="form-select month-selector me-2">
+                {% for month_item in months %}
+                  <option value="{{ month_item.value }}" {% if month_item.value == month %}selected{% endif %}>
+                    {{ month_item.name }}
+                  </option>
+                {% endfor %}
+              </select>
+              
+              <select name="year" class="form-select year-selector me-2">
+                {% for year_item in years %}
+                  <option value="{{ year_item }}" {% if year_item == year %}selected{% endif %}>
+                    {{ year_item }}
+                  </option>
+                {% endfor %}
+              </select>
+              
+              <button type="submit" class="btn btn-primary go-button">Go</button>
+            </div>
+          </div>
+          
+          <!-- Custom Date Range -->
+          <div class="col-lg-6">
+            <div class="d-flex align-items-center">
+              <input type="date" name="start_date" placeholder="Start Date" class="form-control me-2" 
+                     value="{{ start_date|date:'Y-m-d' }}">
+              <span class="me-2">to</span>
+              <input type="date" name="end_date" placeholder="End Date" class="form-control me-2"
+                     value="{{ end_date|date:'Y-m-d' }}">
+              <button type="submit" class="btn btn-primary">Apply</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Calendar Header -->
+    <div class="calendar-header">
+      <div class="calendar-title-row">
+        <div class="calendar-title">
+          {% if is_custom_range %}
+            {{ start_date|date:"F d, Y" }} - {{ end_date|date:"F d, Y" }}
+          {% else %}
+            {{ month_name }} {{ year }}
+          {% endif %}
+        </div>
+        
+        <div class="d-flex align-items-center">
+          <button id="clearSelection" class="btn btn-outline-secondary me-2" style="display: none;">
+            Clear Selection
+          </button>
+          <button id="selectAllVisible" class="btn btn-outline-primary">Select All</button>
+        </div>
+      </div>
+      
+      <div class="calendar-legend">
+        <div class="legend-item">
+          <span class="legend-color working"></span>
+          <span>Working Day</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color holiday"></span>
+          <span>Holiday</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color festival"></span>
+          <span>Festival</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color special_working"></span>
+          <span>Special Working</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color half_day"></span>
+          <span>Half Day</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="calendar-grid">
+      <div class="calendar-weekdays">
+        <div>Sun</div>
+        <div>Mon</div>
+        <div>Tue</div>
+        <div>Wed</div>
+        <div>Thu</div>
+        <div>Fri</div>
+        <div>Sat</div>
+      </div>
+
+      {% for week in calendar %}
+        <div class="calendar-week">
+          {% for day in week %}
+            {% if day != 0 %}
+              {% with current_date=year|stringformat:"d"|add:'-'|add:month|stringformat:"02d"|add:'-'|add:day|stringformat:"02d" %}
+                {% with calendar_day=calendar_days|get_item:current_date %}
+                  <div class="calendar-day {% if current_date == today|date:'Y-m-d' %}today{% endif %}" 
+                       data-date="{{ current_date }}"
+                       data-day-type="{{ calendar_day.day_type|default:'WORKING' }}"
+                       data-description="{{ calendar_day.description|default:'' }}"
+                       data-is-saturday-working="{{ calendar_day.is_saturday_working|yesno:'true,false' }}">
+                    
+                    <!-- Day indicator bar -->
+                    {% if calendar_day %}
+                      <div class="day-indicator {{ calendar_day.day_type|lower }}"></div>
+                    {% endif %}
+                    
+                    <div class="day-number">{{ day }}</div>
+                    
+                    {% if calendar_day %}
+                      <div class="day-type {{ calendar_day.day_type|lower }}">
+                        {{ calendar_day.get_day_type_display }}
+                      </div>
+                      {% if calendar_day.description %}
+                        <div class="day-description">{{ calendar_day.description }}</div>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                {% endwith %}
+              {% endwith %}
+            {% else %}
+              <div class="calendar-day empty"></div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Actions Bar for Bulk Operations -->
+  <div class="action-bar" id="actionBar">
+    <span class="counter">0 days selected</span>
+    
+    <select class="form-select me-2" id="bulkDayType">
+      <option value="WORKING">Working Day</option>
+      <option value="HOLIDAY">Holiday</option>
+      <option value="FESTIVAL">Festival</option>
+      <option value="SPECIAL_WORKING">Special Working Day</option>
+      <option value="HALF_DAY">Half Day</option>
+    </select>
+    
+    <input type="text" class="form-control me-2" id="bulkDescription" placeholder="Description (optional)">
+    
+    <div class="form-check me-3">
+      <input class="form-check-input" type="checkbox" id="bulkIsSaturdayWorking">
+      <label class="form-check-label" for="bulkIsSaturdayWorking">
+        Saturday Working
+      </label>
+    </div>
+    
+    <div class="bulk-actions-controls">
+      <button class="btn btn-secondary" id="cancelBulkAction">Cancel</button>
+      <button class="btn btn-primary" id="applyBulkAction">Apply to Selection</button>
+    </div>
+  </div>
+
+  <!-- Day Edit Modal (for single day edit) -->
+  <div class="modal fade" id="dayEditModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Day</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="dayEditForm">
+            {% csrf_token %}
+            <input type="hidden" id="editDate" name="date">
+            <div class="mb-3">
+              <label class="form-label">Day Type</label>
+              <select class="form-select" id="dayType" name="day_type">
+                <option value="WORKING">Working Day</option>
+                <option value="HOLIDAY">Holiday</option>
+                <option value="FESTIVAL">Festival</option>
+                <option value="SPECIAL_WORKING">Special Working Day</option>
+                <option value="HALF_DAY">Half Day</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Description</label>
+              <input type="text" class="form-control" id="description" name="description">
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="isSaturdayWorking" name="is_saturday_working">
+                <label class="form-check-label" for="isSaturdayWorking">Saturday Working</label>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveDay">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast for notifications -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header bg-success text-white">
+        <strong class="me-auto">Success</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        Calendar updated successfully!
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Initialize variables
+      const modal = new bootstrap.Modal(document.getElementById('dayEditModal'));
+      const form = document.getElementById('dayEditForm');
+      const saveButton = document.getElementById('saveDay');
+      const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+      const actionBar = document.getElementById('actionBar');
+      const selectAllButton = document.getElementById('selectAllVisible');
+      const clearSelectionButton = document.getElementById('clearSelection');
+      
+      // Track selected days
+      let selectedDays = [];
+      const counter = document.querySelector('.action-bar .counter');
+      
+      // Update selected count display
+      function updateSelectedCount() {
+        counter.textContent = `${selectedDays.length} days selected`;
+        
+        // Show/hide action bar based on selection
+        if (selectedDays.length > 0) {
+          actionBar.classList.add('active');
+          clearSelectionButton.style.display = 'block';
+        } else {
+          actionBar.classList.remove('active');
+          clearSelectionButton.style.display = 'none';
+        }
+      }
+      
+      // Toggle day selection
+      document.querySelectorAll('.calendar-day:not(.empty)').forEach((day) => {
+        day.addEventListener('click', function(e) {
+          // If using shift key and there's already a selection, select all days in between
+          if (e.shiftKey && selectedDays.length > 0) {
+            const lastSelected = document.querySelector(`[data-date="${selectedDays[selectedDays.length-1]}"]`);
+            const allDays = Array.from(document.querySelectorAll('.calendar-day:not(.empty)'));
+            
+            const currentIndex = allDays.indexOf(this);
+            const lastIndex = allDays.indexOf(lastSelected);
+            
+            const start = Math.min(currentIndex, lastIndex);
+            const end = Math.max(currentIndex, lastIndex);
+            
+            for (let i = start; i <= end; i++) {
+              const day = allDays[i];
+              if (!day.classList.contains('selected')) {
+                day.classList.add('selected');
+                selectedDays.push(day.dataset.date);
+              }
+            }
+          } else {
+            // Toggle single day selection
+            this.classList.toggle('selected');
+            
+            const date = this.dataset.date;
+            const index = selectedDays.indexOf(date);
+            
+            if (index === -1) {
+              selectedDays.push(date);
+            } else {
+              selectedDays.splice(index, 1);
+            }
+          }
+          
+          updateSelectedCount();
+        });
+        
+        // Double-click to edit single day
+        day.addEventListener('dblclick', function() {
+          // Clear any selections
+          document.querySelectorAll('.calendar-day.selected').forEach(d => {
+            d.classList.remove('selected');
+          });
+          selectedDays = [];
+          updateSelectedCount();
+          
+          // Show edit modal for this day
+          const date = this.dataset.date;
+          const dayType = this.dataset.dayType;
+          const description = this.dataset.description;
+          const isSaturdayWorking = this.dataset.isSaturdayWorking === 'true';
+          
+          document.getElementById('editDate').value = date;
+          document.getElementById('dayType').value = dayType;
+          document.getElementById('description').value = description;
+          document.getElementById('isSaturdayWorking').checked = isSaturdayWorking;
+          
+          modal.show();
+        });
+      });
+      
+      // Select all visible days
+      selectAllButton.addEventListener('click', function() {
+        const allDays = document.querySelectorAll('.calendar-day:not(.empty)');
+        
+        // If all are already selected, deselect all
+        const allSelected = selectedDays.length === allDays.length;
+        
+        if (allSelected) {
+          allDays.forEach(day => {
+            day.classList.remove('selected');
+          });
+          selectedDays = [];
+          selectAllButton.textContent = 'Select All';
+        } else {
+          allDays.forEach(day => {
+            if (!day.classList.contains('selected')) {
+              day.classList.add('selected');
+              selectedDays.push(day.dataset.date);
+            }
+          });
+          selectAllButton.textContent = 'Deselect All';
+        }
+        
+        // Remove duplicates
+        selectedDays = [...new Set(selectedDays)];
+        updateSelectedCount();
+      });
+      
+      // Clear selection
+      clearSelectionButton.addEventListener('click', function() {
+        document.querySelectorAll('.calendar-day.selected').forEach(day => {
+          day.classList.remove('selected');
+        });
+        selectedDays = [];
+        updateSelectedCount();
+        selectAllButton.textContent = 'Select All';
+      });
+      
+      // Cancel bulk action
+      document.getElementById('cancelBulkAction').addEventListener('click', function() {
+        document.querySelectorAll('.calendar-day.selected').forEach(day => {
+          day.classList.remove('selected');
+        });
+        selectedDays = [];
+        updateSelectedCount();
+      });
+      
+      // Apply bulk action
+      document.getElementById('applyBulkAction').addEventListener('click', function() {
+        if (selectedDays.length === 0) return;
+        
+        const dayType = document.getElementById('bulkDayType').value;
+        const description = document.getElementById('bulkDescription').value;
+        const isSaturdayWorking = document.getElementById('bulkIsSaturdayWorking').checked;
+        
+        const formData = new FormData();
+        formData.append('is_bulk', 'true');
+        formData.append('dates', selectedDays.join(','));
+        formData.append('day_type', dayType);
+        formData.append('description', description);
+        if (isSaturdayWorking) {
+          formData.append('is_saturday_working', 'on');
+        }
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        // Show loading state
+        this.textContent = 'Updating...';
+        this.disabled = true;
+        
+        fetch('{% url "update_calendar_day" %}', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Update all selected days in the UI
+            selectedDays.forEach(dateStr => {
+              const day = document.querySelector(`[data-date="${dateStr}"]`);
+              if (day) {
+                // Update data attributes
+                day.dataset.dayType = dayType;
+                day.dataset.description = description;
+                day.dataset.isSaturdayWorking = isSaturdayWorking;
+                
+                // Update indicator
+                let indicator = day.querySelector('.day-indicator');
+                if (!indicator) {
+                  indicator = document.createElement('div');
+                  indicator.className = 'day-indicator';
+                  day.prepend(indicator);
+                }
+                indicator.className = 'day-indicator ' + dayType.toLowerCase();
+                
+                // Update day type label
+                let dayTypeEl = day.querySelector('.day-type');
+                if (!dayTypeEl) {
+                  dayTypeEl = document.createElement('div');
+                  day.appendChild(dayTypeEl);
+                }
+                
+                dayTypeEl.className = 'day-type ' + dayType.toLowerCase();
+                dayTypeEl.textContent = data.data[0].day_type;
+                
+                // Update description
+                let descEl = day.querySelector('.day-description');
+                if (description) {
+                  if (!descEl) {
+                    descEl = document.createElement('div');
+                    descEl.className = 'day-description';
+                    day.appendChild(descEl);
+                  }
+                  descEl.textContent = description;
+                } else if (descEl) {
+                  descEl.remove();
+                }
+                
+                // Remove selection
+                day.classList.remove('selected');
+              }
+            });
+            
+            // Clear selection
+            selectedDays = [];
+            updateSelectedCount();
+            
+            // Show success message
+            successToast.show();
+          } else {
+            alert('Error updating days: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error updating days. Please try again.');
+        })
+        .finally(() => {
+          // Reset button state
+          this.textContent = 'Apply to Selection';
+          this.disabled = false;
+        });
+      });
+      
+      // Handle single day save
+      saveButton.addEventListener('click', function() {
+        const formData = new FormData(form);
+        
+        fetch('{% url "update_calendar_day" %}', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const dateStr = formData.get('date');
+            const day = document.querySelector(`[data-date="${dateStr}"]`);
+            
+            if (day) {
+              const dayType = formData.get('day_type');
+              const description = formData.get('description');
+              const isSaturdayWorking = formData.has('is_saturday_working');
+              
+              // Update data attributes
+              day.dataset.dayType = dayType;
+              day.dataset.description = description;
+              day.dataset.isSaturdayWorking = isSaturdayWorking;
+              
+              // Update indicator
+              let indicator = day.querySelector('.day-indicator');
+              if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'day-indicator';
+                day.prepend(indicator);
+              }
+              indicator.className = 'day-indicator ' + dayType.toLowerCase();
+              
+              // Update day type label
+              let dayTypeEl = day.querySelector('.day-type');
+              if (!dayTypeEl) {
+                dayTypeEl = document.createElement('div');
+                day.appendChild(dayTypeEl);
+              }
+              
+              dayTypeEl.className = 'day-type ' + dayType.toLowerCase();
+              dayTypeEl.textContent = data.data[0].day_type;
+              
+              // Update description
+              let descEl = day.querySelector('.day-description');
+              if (description) {
+                if (!descEl) {
+                  descEl = document.createElement('div');
+                  descEl.className = 'day-description';
+                  day.appendChild(descEl);
+                }
+                descEl.textContent = description;
+              } else if (descEl) {
+                descEl.remove();
+              }
+            }
+            
+            modal.hide();
+            successToast.show();
+          } else {
+            alert('Error updating day: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error updating day');
+        });
+      });
+      
+      // Initialize flatpickr for date inputs
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      dateInputs.forEach(input => {
+        flatpickr(input, {
+          dateFormat: "Y-m-d",
+          allowInput: true
+        });
+      });
+      
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function(e) {
+        // Escape key to clear selection
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.calendar-day.selected').forEach(day => {
+            day.classList.remove('selected');
+          });
+          selectedDays = [];
+          updateSelectedCount();
+        }
+        
+        // Ctrl+A to select all
+        if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          selectAllButton.click();
+        }
+      });
+      
+      // Handle month/year change without page reload
+      document.querySelector('.month-selector').addEventListener('change', function() {
+        document.getElementById('calendarFiltersForm').submit();
+      });
+      
+      document.querySelector('.year-selector').addEventListener('change', function() {
+        document.getElementById('calendarFiltersForm').submit();
+      });
+    });
+  </script>
+{% endblock %}

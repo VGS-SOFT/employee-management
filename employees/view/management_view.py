@@ -1,5 +1,5 @@
-from calendar import monthrange
-from datetime import datetime, time, timedelta
+from calendar import monthrange, monthcalendar
+from datetime import datetime, time, timedelta, date
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -27,7 +27,10 @@ from ..models import (
     TimeRecord,
     WorkLog,
     WorkSchedule,
+    CalendarDay,
 )
+from django.http import JsonResponse
+import calendar
 
 
 # Helper function to calculate the late arrivial.
@@ -234,6 +237,44 @@ def employee_details(request, team_id):
             ).values_list("date", flat=True)
         )
 
+        # =====================================
+        # NEW CODE: Use CalendarDay to determine working days
+        # =====================================
+        calendar_days = CalendarDay.objects.filter(date__range=[start_date, end_date])
+        calendar_days_dict = {cal_day.date: cal_day for cal_day in calendar_days}
+        
+        # Calculate working days based on CalendarDay settings
+        working_dates = []
+        current = start_date
+        while current <= end_date:
+            # Check if there's a calendar day entry
+            if current in calendar_days_dict:
+                cal_day = calendar_days_dict[current]
+                # Add if it's a working day, special working day, or half day
+                if cal_day.day_type in ['WORKING', 'SPECIAL_WORKING', 'HALF_DAY']:
+                    working_dates.append(current)
+                # For Saturdays, check the is_saturday_working flag
+                elif current.weekday() == 5 and cal_day.is_saturday_working:
+                    working_dates.append(current)
+            else:
+                # Fall back to original logic for days without specific settings
+                # Skip Sundays
+                if current.weekday() != 6 and current not in holidays:
+                    # For Saturdays, check if it's even week
+                    if current.weekday() == 5:
+                        week_number = (current.day - 1) // 7 + 1
+                        if week_number % 2 == 0:  # Even week Saturday
+                            working_dates.append(current)
+                    else:
+                        working_dates.append(current)  # Monday to Friday
+            current += timedelta(days=1)
+            
+        # =====================================
+        # END NEW CODE
+        # =====================================
+        
+        # Original code commented out but kept for reference
+        """
         # Calculate working days
         working_dates = []
         current = start_date
@@ -248,6 +289,7 @@ def employee_details(request, team_id):
                 else:
                     working_dates.append(current)  # Monday to Friday
             current += timedelta(days=1)
+        """
 
         total_working_days = len(working_dates)
         working_dates_set = set(working_dates)
@@ -286,14 +328,29 @@ def employee_details(request, team_id):
                     hours_worked = duration.total_seconds() / 3600
                     status = "Present"
 
-                    if hours_worked < 3.5:
-                        status = "Absent"
-                    elif hours_worked < 6:
-                        status = "Half Day"
-                        half_days += 1
+                    # Check if this date is a half-day in CalendarDay
+                    is_half_day = date in calendar_days_dict and calendar_days_dict[date].day_type == 'HALF_DAY'
+                    
+                    # Adjust calculations based on day type
+                    if is_half_day:
+                        # For half days, lower threshold for being present
+                        if hours_worked < 2:
+                            status = "Absent"
+                        else:
+                            status = "Present (Half Day)"
+                            present_count += 0.5
+                            half_days += 1
                     else:
-                        full_days += 1
-                        present_count += 1
+                        # Normal day calculations
+                        if hours_worked < 3.5:
+                            status = "Absent"
+                        elif hours_worked < 6:
+                            status = "Half Day"
+                            half_days += 1
+                            present_count += 0.5
+                        else:
+                            full_days += 1
+                            present_count += 1
 
                     if (
                         record.check_in.time()
@@ -358,6 +415,15 @@ def employee_details(request, team_id):
                 )
             current += timedelta(days=1)
 
+        # Get calendar day information for context
+        calendar_days_info = {}
+        for day in calendar_days:
+            calendar_days_info[day.date] = {
+                'type': day.get_day_type_display(),
+                'description': day.description,
+                'is_saturday_working': day.is_saturday_working
+            }
+
         context = {
             "employee": employee,
             "team_details": {"team_id": team.team_id, "department": team.department},
@@ -381,6 +447,7 @@ def employee_details(request, team_id):
                 "current_period": f"{start_date.strftime('%B %d, %Y')} - {end_date.strftime('%B %d, %Y')}",
             },
             "weekend_dates": weekend_dates,
+            "calendar_days": calendar_days_info,
         }
 
         return render(request, "management/employee_details.html", context)
@@ -982,3 +1049,208 @@ def management_process_request(request, request_id):
             "team_request": team_request,
         },
     )
+
+
+@login_required
+def calendar_management(request):
+    if request.user.role != "MANAGEMENT":
+        messages.error(request, "Access denied. Management privileges required.")
+        return redirect("login")
+
+    # Get current year and month, or from query parameters
+    year = int(request.GET.get('year', datetime.now().year))
+    month = int(request.GET.get('month', datetime.now().month))
+    
+    # Handle custom date range if provided
+    custom_start = request.GET.get('start_date')
+    custom_end = request.GET.get('end_date')
+    
+    if custom_start and custom_end:
+        try:
+            start_date = datetime.strptime(custom_start, "%Y-%m-%d").date()
+            end_date = datetime.strptime(custom_end, "%Y-%m-%d").date()
+            # Set year and month to match start date for proper display
+            year = start_date.year
+            month = start_date.month
+            
+            # Generate a list of all dates in the range
+            date_range = []
+            current = start_date
+            while current <= end_date:
+                date_range.append(current)
+                current += timedelta(days=1)
+                
+            # Group dates into weeks (for display)
+            calendar_weeks = []
+            current_week = []
+            week_day = start_date.weekday()
+            
+            # Pad the first week with empty days
+            for i in range(week_day):
+                current_week.append(0)
+                
+            for current_date in date_range:
+                if len(current_week) == 7:
+                    calendar_weeks.append(current_week)
+                    current_week = []
+                current_week.append(current_date.day)
+                
+            # Pad the last week if needed
+            while len(current_week) < 7:
+                current_week.append(0)
+                
+            if current_week:
+                calendar_weeks.append(current_week)
+                
+            cal = calendar_weeks
+            # Set custom range flag for template
+            is_custom_range = True
+            
+        except ValueError:
+            # Fallback to month view
+            cal = monthcalendar(year, month)
+            start_date = date(year, month, 1)
+            if month == 12:
+                end_date = date(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end_date = date(year, month + 1, 1) - timedelta(days=1)
+            is_custom_range = False
+    else:
+        # Standard month view
+        cal = monthcalendar(year, month)
+        start_date = date(year, month, 1)
+        if month == 12:
+            end_date = date(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = date(year, month + 1, 1) - timedelta(days=1)
+        is_custom_range = False
+    
+    # Get all calendar days for the date range
+    calendar_days = {}
+    for day in CalendarDay.objects.filter(date__gte=start_date, date__lte=end_date):
+        calendar_days[day.date.strftime('%Y-%m-%d')] = day
+    
+    # Get holidays for display
+    holidays = {}
+    for holiday in Holiday.objects.filter(date__gte=start_date, date__lte=end_date):
+        holidays[holiday.date.strftime('%Y-%m-%d')] = holiday
+    
+    # Get months for dropdown
+    months = [
+        {'value': 1, 'name': 'January'},
+        {'value': 2, 'name': 'February'},
+        {'value': 3, 'name': 'March'},
+        {'value': 4, 'name': 'April'},
+        {'value': 5, 'name': 'May'},
+        {'value': 6, 'name': 'June'},
+        {'value': 7, 'name': 'July'},
+        {'value': 8, 'name': 'August'},
+        {'value': 9, 'name': 'September'},
+        {'value': 10, 'name': 'October'},
+        {'value': 11, 'name': 'November'},
+        {'value': 12, 'name': 'December'},
+    ]
+    
+    # Years for dropdown (from current year - 5 to current year + 5)
+    current_year = datetime.now().year
+    years = list(range(current_year - 5, current_year + 6))
+    
+    context = {
+        'year': year,
+        'month': month,
+        'month_name': start_date.strftime('%B'),
+        'calendar': cal,
+        'calendar_days': calendar_days,
+        'holidays': holidays,
+        'today': date.today(),
+        'months': months,
+        'years': years,
+        'is_custom_range': is_custom_range,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    
+    return render(request, 'management/calendar_management.html', context)
+
+
+@login_required
+def update_calendar_day(request):
+    if request.user.role != "MANAGEMENT":
+        return JsonResponse({'success': False, 'message': 'Access denied'})
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    
+    try:
+        # Check if bulk update
+        is_bulk = request.POST.get('is_bulk') == 'true'
+        day_type = request.POST.get('day_type')
+        description = request.POST.get('description', '')
+        is_saturday_working = request.POST.get('is_saturday_working') == 'on'
+        
+        updated_days = []
+        
+        if is_bulk:
+            # Process multiple dates
+            dates_str = request.POST.get('dates', '')
+            if not dates_str:
+                return JsonResponse({'success': False, 'message': 'No dates provided for bulk update'})
+            
+            dates = dates_str.split(',')
+            for date_str in dates:
+                if not date_str.strip():
+                    continue
+                    
+                try:
+                    day_date = datetime.strptime(date_str.strip(), '%Y-%m-%d').date()
+                    calendar_day, created = CalendarDay.objects.update_or_create(
+                        date=day_date,
+                        defaults={
+                            'day_type': day_type,
+                            'description': description,
+                            'is_saturday_working': is_saturday_working
+                        }
+                    )
+                    updated_days.append({
+                        'date': date_str,
+                        'day_type': calendar_day.get_day_type_display(),
+                        'description': calendar_day.description,
+                        'is_saturday_working': calendar_day.is_saturday_working
+                    })
+                except ValueError as e:
+                    return JsonResponse({'success': False, 'message': f'Invalid date format: {date_str}'})
+        else:
+            # Process single date
+            date_str = request.POST.get('date')
+            if not date_str:
+                return JsonResponse({'success': False, 'message': 'No date provided'})
+                
+            try:
+                day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                calendar_day, created = CalendarDay.objects.update_or_create(
+                    date=day_date,
+                    defaults={
+                        'day_type': day_type,
+                        'description': description,
+                        'is_saturday_working': is_saturday_working
+                    }
+                )
+                updated_days.append({
+                    'date': date_str,
+                    'day_type': calendar_day.get_day_type_display(),
+                    'description': calendar_day.description,
+                    'is_saturday_working': calendar_day.is_saturday_working
+                })
+            except ValueError as e:
+                return JsonResponse({'success': False, 'message': f'Invalid date format: {date_str}'})
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully updated {len(updated_days)} days',
+            'data': updated_days
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)})

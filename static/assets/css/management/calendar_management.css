@@ -1,0 +1,216 @@
+.calendar-container {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.calendar-nav h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85rem;
+}
+
+.bi-circle-fill.working {
+    color: #28a745;
+}
+
+.bi-circle-fill.holiday {
+    color: #dc3545;
+}
+
+.bi-circle-fill.festival {
+    color: #ffc107;
+}
+
+.bi-circle-fill.special_working {
+    color: #17a2b8;
+}
+
+.bi-circle-fill.half_day {
+    color: #6c757d;
+}
+
+.calendar-grid {
+    display: grid;
+    gap: 1px;
+    background: #eee;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f5f5f5;
+    text-align: center;
+    font-weight: bold;
+    padding: 10px 0;
+}
+
+.calendar-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-day {
+    min-height: 100px;
+    padding: 10px;
+    background: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.calendar-day:hover {
+    background: #f8f9fa;
+}
+
+.calendar-day.empty {
+    background: #f5f5f5;
+    cursor: default;
+}
+
+.calendar-day.today {
+    box-shadow: inset 0 0 0 2px #007bff;
+}
+
+/* Day type colors */
+.calendar-day.working {
+    border-left: 4px solid #28a745;
+}
+
+.calendar-day.holiday {
+    border-left: 4px solid #dc3545;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.calendar-day.festival {
+    border-left: 4px solid #ffc107;
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+.calendar-day.special_working {
+    border-left: 4px solid #17a2b8;
+    background-color: rgba(23, 162, 184, 0.05);
+}
+
+.calendar-day.half_day {
+    border-left: 4px solid #6c757d;
+    background: linear-gradient(135deg, white 50%, rgba(108, 117, 125, 0.1) 50%);
+}
+
+.day-number {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.day-type {
+    font-size: 0.75rem;
+    color: #555;
+    margin-bottom: 3px;
+}
+
+.day-description {
+    font-size: 0.7rem;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.holiday-name {
+    font-size: 0.75rem;
+    color: #dc3545;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    border-bottom: 1px solid #eee;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #eee;
+    padding: 1.5rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #333;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: #333;
+    border-color: #333;
+}
+
+.btn-primary:hover {
+    background: #444;
+    border-color: #444;
+}
+
+.btn-outline-dark {
+    border-color: #333;
+    color: #333;
+}
+
+.btn-outline-dark:hover {
+    background: #333;
+    color: #fff;
+}

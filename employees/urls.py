@@ -90,6 +90,14 @@ urlpatterns = [
                     management_view.management_process_request,
                     name="management_process_request",
                 ),
+                path(
+                    "calendar/", management_view.calendar_management, name="calendar_management"
+                ),
+                path(
+                    "calendar/update/",
+                    management_view.update_calendar_day,
+                    name="update_calendar_day",
+                ),
             ]
         ),
     ),

@@ -731,3 +731,36 @@ class TeamRequest(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+
+
+class CalendarDay(models.Model):
+    """
+    Model to manage different types of days in the calendar
+    """
+    date = models.DateField(unique=True)
+    day_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('WORKING', 'Working Day'),
+            ('HOLIDAY', 'Holiday'),
+            ('FESTIVAL', 'Festival'),
+            ('SPECIAL_WORKING', 'Special Working Day'),
+            ('HALF_DAY', 'Half Day'),
+        ],
+        default='WORKING'
+    )
+    description = models.CharField(max_length=200, blank=True)
+    is_saturday_working = models.BooleanField(
+        default=False,
+        help_text="Whether this Saturday is a working day"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date']
+        verbose_name = 'Calendar Day'
+        verbose_name_plural = 'Calendar Days'
+
+    def __str__(self):
+        return f"{self.date} - {self.get_day_type_display()}"
